@@ -1,4 +1,5 @@
 import time
+import requests
 from evdev import InputDevice, categorize, ecodes
 import threading
 
@@ -37,10 +38,23 @@ def read_device_events(dev, should_read_input):
                     # Jika tombol Enter (KEY_ENTER) ditekan, proses angka yang terkumpul
                     if event.value == 1 and key_event.keycode == 'KEY_ENTER':
                         print(f"Angka terkumpul: {angka}")
+                        
+                        # Melakukan request GET ke URL dengan parameter 'rfid'
+                        try:
+                            url = f"https://a57f-36-71-172-92.ngrok-free.app/slt/get.php?rfid={angka}"
+                            response = requests.get(url)
+                            if response.status_code == 200:
+                                print(f"Data berhasil dikirim: {angka}")
+                                print(f"{response.content}")
+                            else:
+                                print(f"Gagal mengirim data. Status code: {response.status_code}")
+                        except requests.RequestException as e:
+                            print(f"Terjadi kesalahan saat mengirim request: {e}")
+                        
                         angka = ""  # Reset angka setelah diproses
             except BlockingIOError:
                 pass  # Tidak ada event, lanjutkan loop
 
         else:
-            # Ganti time.sleep dengan threading.Event atau penggunaan lain yang tidak memblokir
-            time.sleep(0.1)  # Tunggu sebentar tanpa memblokir
+            # Tunggu sebentar tanpa memblokir
+            time.sleep(0.1)
