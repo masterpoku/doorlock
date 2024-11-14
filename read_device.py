@@ -48,14 +48,15 @@ def read_device_events(dev, should_read_input):
                                 if response.json() == 1:
                                     print("Membuka pintu")
                                     # Buka pintu disini
+                                elif response.json() == 2:
+                                    print("Registrasi RFID")
+                                elif response.json() == 3:
+                                    print("Dilarang Masuk Semua RFID")
+                                elif response.json() == 4:
+                                    print("Pintu Terbuka tanpa RFID")
                                 else:
-                                    print("Pintu tidak dibuka")
-                                if response.json() == 1:
-                                    print("Membuka pintu")
-                                    # Buka pintu disini
-                                else:
-                                    print("Pintu tidak dibuka")
-                                print(f"Gagal mengirim data. Status code: {response.status_code}")
+                                    print("Status tidak diketahui")
+                               
                         except requests.RequestException as e:
                             print(f"Terjadi kesalahan saat mengirim request: {e}")
                         
