@@ -23,7 +23,7 @@ def main():
     # Menjaga agar program utama tetap berjalan
     while True:
         if data[0] == 1:
-            print("Standby - Menunggu input dari perangkat.")
+            print(".")
         else:
             print("Tidak dapat mengakses scan. Data tidak valid.")
         time.sleep(1)
