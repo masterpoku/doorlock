@@ -45,7 +45,11 @@ def read_device_events(dev, should_read_input):
                             response = requests.get(url)
                             if response.status_code == 200:
                                 print(f"Data berhasil dikirim: {angka}")
-                                print(f"Status buka pintu: {response.json()}")
+                                if response.json() == 1:
+                                    print("Membuka pintu")
+                                    # Buka pintu disini
+                                else:
+                                    print("Pintu tidak dibuka")
                             else:
                                 print(f"Gagal mengirim data. Status code: {response.status_code}")
                         except requests.RequestException as e:
