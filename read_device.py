@@ -1,7 +1,7 @@
-# read_device.py
+import time
 from evdev import InputDevice, categorize, ecodes
+import threading
 
-# Fungsi untuk membaca event dari perangkat input
 def read_device_events(dev, should_read_input):
     angka = ""
     while True:
@@ -42,4 +42,5 @@ def read_device_events(dev, should_read_input):
                 pass  # Tidak ada event, lanjutkan loop
 
         else:
-            time.sleep(1)  # Jika tidak boleh membaca input, tunggu sebentar
+            # Ganti time.sleep dengan threading.Event atau penggunaan lain yang tidak memblokir
+            time.sleep(0.1)  # Tunggu sebentar tanpa memblokir
