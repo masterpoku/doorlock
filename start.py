@@ -29,17 +29,20 @@ def fetch_data_from_api(rfid):
     try:
         response = requests.get(f"{url}?rfid={rfid}")
         if response.status_code == 200:
-            status = response.json()
-            if status == 1:
-                print("Membuka pintu")
-            elif status == 2:
-                print("Registrasi RFID")
-            elif status == 3:
-                print("Dilarang Masuk Semua RFID")
-            elif status == 4:
-                print("Pintu Terbuka tanpa RFID")
-            else:
-                print("Status tidak diketahui")
+            try:
+                status = response.json()  # Coba untuk mengonversi respons ke JSON
+                if status == 1:
+                    print("Membuka pintu")
+                elif status == 2:
+                    print("Registrasi RFID")
+                elif status == 3:
+                    print("Dilarang Masuk Semua RFID")
+                elif status == 4:
+                    print("Pintu Terbuka tanpa RFID")
+                else:
+                    print("Status tidak diketahui")
+            except ValueError:  # Jika respons tidak valid sebagai JSON
+                print(f"Kesalahan: Respons tidak dapat dikonversi ke JSON. Konten: {response.text}")
         else:
             print(f"Error: Koneksi gagal dengan status kode {response.status_code}")
     except requests.RequestException as e:
