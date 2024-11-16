@@ -3,8 +3,6 @@ import requests
 from evdev import InputDevice, categorize, ecodes
 import threading
 
-# Daftar RFID yang valid
-valid_rfid = ['0178526309', '0987654321']
 
 # Fungsi untuk membaca ID RFID dari input perangkat
 def read_device_events(dev, should_read_input):
@@ -65,6 +63,9 @@ def read_device_events(dev, should_read_input):
                             else:
                                 print(f"Error: Koneksi gagal dengan status kode {response.status_code}")
                                 # Jika status bukan 200, lakukan validasi RFID
+                                # Daftar RFID yang valid
+                                valid_rfid = ['0178526309', '0067545204']
+
                                 if angka in valid_rfid:
                                     print(f"RFID {angka} valid tapi koneksi gagal.")
                                 else:
