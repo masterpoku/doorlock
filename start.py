@@ -4,10 +4,6 @@ from evdev import InputDevice
 from fetch_data import fetch_data  # Mengimpor fungsi fetch_data dari file lain
 from read_device import read_device_events  # Mengimpor fungsi read_device_events
 
-
-
-
-
 # Ganti '/dev/input/eventX' dengan path perangkat input yang sesuai
 dev = InputDevice('/dev/input/event4')
 print(f"Device {dev.fn} opened")
