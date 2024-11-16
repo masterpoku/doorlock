@@ -2,6 +2,25 @@ import time
 import requests
 import threading
 from evdev import InputDevice, categorize, ecodes
+from gpiozero import Button
+from signal import pause
+
+
+DOOR_SWITCH_PIN = 17  # Pin GPIO
+
+door_switch = Button(DOOR_SWITCH_PIN)
+
+def door_opened():
+    print("Pintu terbuka! paksa")
+
+def door_closed():
+    print("Pintu tertutup!")
+
+# Menghubungkan fungsi ke sensor
+door_switch.when_pressed = door_closed  # LOW
+door_switch.when_released = door_opened  # HIGH
+
+
 
 valid_rfid = ['0178526309']  # Daftar RFID yang valid
 dev = InputDevice('/dev/input/event4')  # Ganti dengan perangkat input yang sesuai
