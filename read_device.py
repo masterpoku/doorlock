@@ -11,6 +11,10 @@ GPIO.setwarnings(False)
 # Setup untuk pin sensor pembukaan pintu (magnetic door switch)
 DOOR_SWITCH_PIN = 17  # Pin sensor pembukaan pintu (magnetic switch)
 GPIO.setup(DOOR_SWITCH_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)  # Pin sensor pembukaan pintu
+
+# Daftar RFID yang valid
+valid_rfid = ['1234567890', '0987654321']
+
 # Fungsi untuk menampilkan pesan jika pintu dibuka paksa
 def handle_force_open():
     print("Pintu dibuka paksa! Proses dihentikan!")
@@ -51,11 +55,19 @@ def read_device_events(dev, should_read_input):
                     # Jika tombol Enter (KEY_ENTER) ditekan, proses angka yang terkumpul
                     if event.value == 1 and key_event.keycode == 'KEY_ENTER':
                         print(f"ID RFID terkumpul: {angka}")
-                        
+
+                        # Validasi apakah ID RFID ada dalam daftar valid
+                        if angka not in valid_rfid:
+                            print(f"RFID {angka} tidak valid!")
+                            angka = ""  # Reset angka setelah diproses
+                            continue
+
                         # Melakukan request GET ke URL dengan parameter 'rfid'
                         try:
                             url = f"https://287a-36-71-164-132.ngrok-free.app/slt/get.php?rfid={angka}"
                             response = requests.get(url)
+                            
+                            # Cek status kode response dari API
                             if response.status_code == 200:
                                 print(f"Data berhasil dikirim: {angka}")
                                 if response.json() == 1:
@@ -69,10 +81,13 @@ def read_device_events(dev, should_read_input):
                                     print("Pintu Terbuka tanpa RFID")
                                 else:
                                     print("Status tidak diketahui")
-                               
+                            else:
+                                print(f"Error: Koneksi gagal dengan status kode {response.status_code}")
+                                print(f"RFID {angka} tidak dapat diproses!")
+
                         except requests.RequestException as e:
                             print(f"Terjadi kesalahan saat mengirim request: {e}")
-                        
+
                         angka = ""  # Reset angka setelah diproses
             except BlockingIOError:
                 pass  # Tidak ada event, lanjutkan loop
@@ -89,7 +104,9 @@ def open_door():
 # Fungsi untuk memonitor pembukaan pintu paksa menggunakan magnetic door switch
 def monitor_for_force_open():
     while True:
-        if GPIO.input(DOOR_SWITCH_PIN) == GPIO.HIGH:
+        door_status = GPIO.input(DOOR_SWITCH_PIN)
+        print(f"Status pintu: {'Tertutup' if door_status == GPIO.LOW else 'Terbuka'}")  # Debugging untuk status pintu
+        if door_status == GPIO.HIGH:
             handle_force_open()  # Jika pintu dibuka paksa, tampilkan pesan
         time.sleep(0.1)  # Cek sensor setiap 100ms
 
