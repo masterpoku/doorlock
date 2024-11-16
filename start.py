@@ -2,9 +2,8 @@ import time
 import requests
 import threading
 from evdev import InputDevice, categorize, ecodes
-from gpiozero import Button, LED  # Menambahkan LED untuk indikator
+from gpiozero import Button
 from signal import pause
-
 
 DOOR_SWITCH_PIN = 17  # Pin GPIO untuk sensor pintu
 
