@@ -7,21 +7,20 @@ from signal import pause
 
 
 DOOR_SWITCH_PIN = 17  # Pin GPIO untuk sensor pintu
-INDICATOR_PIN = 17    # Pin GPIO untuk indikator pintu terbuka paksa
+
 
 door_switch = Button(DOOR_SWITCH_PIN)
-indicator = LED(INDICATOR_PIN)  # Menyalakan LED di pin ini sebagai indikator
+
 
 def door_opened():
     print("Pintu terbuka! Paksa!")
-    indicator.on()  # Menyalakan LED sebagai indikator pintu dibuka paksa
+    
     # Menampilkan alarm jika pintu terbuka tanpa RFID
     print("Alarm: Pintu terbuka tanpa RFID!")
 
 def door_closed():
     print("Pintu tertutup!")
-    indicator.off()  # Mematikan LED ketika pintu tertutup
-
+    print("Alarm Mati")
 # Menghubungkan fungsi ke sensor pintu
 door_switch.when_pressed = door_closed  # LOW
 door_switch.when_released = door_opened  # HIGH
