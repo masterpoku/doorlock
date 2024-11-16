@@ -64,7 +64,7 @@ def read_device_events(dev, should_read_input):
                                 print(f"Error: Koneksi gagal dengan status kode {response.status_code}")
                                 # Jika status bukan 200, lakukan validasi RFID
                                 # Daftar RFID yang valid
-                                valid_rfid = ['0178526309', '0067545204']
+                                valid_rfid = ['0178526309']
 
                                 if angka in valid_rfid:
                                     print(f"RFID {angka} valid tapi koneksi gagal.")
