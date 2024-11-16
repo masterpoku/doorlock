@@ -1,6 +1,6 @@
 import requests
 
-valid_rfid = ['0178526309']  # Daftar RFID yang valid
+
 
 def fetch_data(url, data, should_read_input):
     try:
@@ -15,7 +15,6 @@ def fetch_data(url, data, should_read_input):
             data[0] = new_data
             # Lakukan sesuatu dengan response jika perlu, misalnya membuka pintu
         else:
-            data[0] = 1
             print(f"Error: Koneksi gagal dengan status kode {response.status_code}")
             
             # Validasi RFID jika status kode bukan 200

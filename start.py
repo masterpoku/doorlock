@@ -4,6 +4,7 @@ from evdev import InputDevice
 from fetch_data import fetch_data  # Mengimpor fungsi fetch_data dari file lain
 from read_device import read_device_events  # Mengimpor fungsi read_device_events
 
+valid_rfid = ['0178526309']  # Daftar RFID yang valid
 # Ganti '/dev/input/eventX' dengan path perangkat input yang sesuai
 dev = InputDevice('/dev/input/event4')
 print(f"Device {dev.fn} opened")
@@ -25,6 +26,10 @@ def main():
         if data[0] == 1:
             print(".")
         else:
+            if data.get('rfid') in valid_rfid:  # Pastikan 'rfid' ada di data
+                print(f"RFID {data.get('rfid')} valid, namun koneksi ke API gagal.")
+            else:
+                print(f"RFID {data.get('rfid')} tidak valid.")
             print("Tidak dapat mengakses scan. Data tidak valid.")
         time.sleep(1)
 
