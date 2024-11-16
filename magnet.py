@@ -1,23 +1,19 @@
-import RPi.GPIO as GPIO
-from time import sleep
+from gpiozero import Button
+from signal import pause
 
-DOOR_SWITCH_PIN = 17  # Pin GPIO untuk sensor pintu
-GPIO.setmode(GPIO.BCM)  # Menggunakan nomor pin BCM
-GPIO.setup(DOOR_SWITCH_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+DOOR_SWITCH_PIN = 17  # Pin GPIO
 
-def door_opened(channel):
+door_switch = Button(DOOR_SWITCH_PIN)
+
+def door_opened():
     print("Pintu terbuka!")
 
-def door_closed(channel):
+def door_closed():
     print("Pintu tertutup!")
 
-GPIO.add_event_detect(DOOR_SWITCH_PIN, GPIO.BOTH, callback=door_opened, bouncetime=200)
-GPIO.add_event_detect(DOOR_SWITCH_PIN, GPIO.FALLING, callback=door_closed, bouncetime=200)
+# Menghubungkan fungsi ke sensor
+door_switch.when_pressed = door_closed  # LOW
+door_switch.when_released = door_opened  # HIGH
 
-try:
-    while True:
-        sleep(1)  # Menunggu tanpa henti
-except KeyboardInterrupt:
-    print("Program dihentikan")
-finally:
-    GPIO.cleanup()  # Pastikan GPIO dibersihkan saat program selesai
+print("Monitoring status pintu. Tekan Ctrl+C untuk keluar.")
+pause()
