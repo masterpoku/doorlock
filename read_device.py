@@ -41,7 +41,7 @@ def read_device_events(dev, should_read_input):
                         
                         # Melakukan request GET ke URL dengan parameter 'rfid'
                         try:
-                            url = f"https://a57f-36-71-172-92.ngrok-free.app/slt/get.php?rfid={angka}"
+                            url = f"https://287a-36-71-164-132.ngrok-free.app/slt/get.php?rfid={angka}"
                             response = requests.get(url)
                             if response.status_code == 200:
                                 print(f"Data berhasil dikirim: {angka}")
