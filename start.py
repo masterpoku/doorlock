@@ -69,6 +69,10 @@ def read_device_events(dev, should_read_input):
                             fetch_data_from_api(rfid_data)  # Mengambil data dari API jika koneksi ada
                         else:
                             print(f"Data RFID pasif: {rfid_data}")  # Gunakan data RFID secara pasif
+                            if valid_rfid == rfid_data:
+                                print("RFID valid! Membuka pintu...")
+                            else:
+                                print("RFID tidak valid. Coba lagi.")
                         rfid_data = ""  # Reset setelah diproses
             except BlockingIOError:
                 pass  # Tidak ada event, lanjutkan loop
