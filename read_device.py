@@ -4,7 +4,7 @@ from evdev import InputDevice, categorize, ecodes
 import threading
 
 # Daftar RFID yang valid
-valid_rfid = ['1234567890', '0987654321']
+valid_rfid = ['0178526309', '0987654321']
 
 # Fungsi untuk membaca ID RFID dari input perangkat
 def read_device_events(dev, should_read_input):
