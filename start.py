@@ -4,10 +4,6 @@ from evdev import InputDevice
 from fetch_data import fetch_data  # Mengimpor fungsi fetch_data dari file lain
 from read_device import read_device_events  # Mengimpor fungsi read_device_events
 
-
-
-
-
 # Ganti '/dev/input/eventX' dengan path perangkat input yang sesuai
 dev = InputDevice('/dev/input/event4')
 print(f"Device {dev.fn} opened")
@@ -26,10 +22,15 @@ def main():
 
     # Menjaga agar program utama tetap berjalan
     while True:
-        if data[0] == 1:
-            print(".")
+        # Periksa apakah data[0] berisi objek yang valid, misalnya status atau data dari API
+        if data[0] is not None:
+            if data[0] == 1:
+                print("Data berhasil dikirim: .")
+            else:
+                print("Data tidak valid: ", data[0])
         else:
             print("Tidak dapat mengakses scan. Data tidak valid.")
+        
         time.sleep(1)
 
 # Menjalankan program utama
