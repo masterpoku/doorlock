@@ -1,7 +1,7 @@
 import time
 import threading
-from evdev import InputDevice
 import requests
+from evdev import InputDevice
 from read_device import read_device_events  # Mengimpor fungsi read_device_events
 
 valid_rfid = ['0178526309']  # Daftar RFID yang valid
@@ -17,6 +17,18 @@ url = "https://287a-36-71-164-132.ngrok-free.app/slt/api.php"
 data = [None]  # Menggunakan list untuk menyimpan data
 should_read_input = [False]  # Menggunakan list untuk menyimpan flag pembacaan input
 
+# Fungsi untuk memeriksa koneksi internet
+def is_connected():
+    try:
+        # Coba akses URL untuk mengecek koneksi
+        response = requests.get(url, timeout=5)
+        if response.status_code == 200:
+            return True
+        else:
+            return False
+    except requests.RequestException:
+        return False
+
 # Fungsi untuk mengambil data dari API
 def fetch_data(url, data, should_read_input):
     try:
@@ -30,6 +42,7 @@ def fetch_data(url, data, should_read_input):
             new_data = response.json()  # Jika Anda ingin mengupdate data dengan response
             data[0] = new_data  # Update data[0] dengan data baru
         else:
+            data[0] = 2
             print(f"Error: Koneksi gagal dengan status kode {response.status_code}")
         
     except requests.RequestException as e:
@@ -37,25 +50,19 @@ def fetch_data(url, data, should_read_input):
 
 # Menjalankan kedua fungsi dalam thread terpisah
 def main():
-    # Memulai thread untuk mengambil data
-    threading.Thread(target=fetch_data, args=(url, data, should_read_input), daemon=True).start()
-
-    # Menjaga agar program utama tetap berjalan
-    while True:
-        if data[0] is not None:  # Memastikan data[0] berisi informasi
-            if isinstance(data[0], dict) and 'rfid' in data[0]:  # Memeriksa apakah data[0] adalah dictionary dan memiliki key 'rfid'
-                if data[0]['rfid'] in valid_rfid:
-                    print(f"RFID {data[0]['rfid']} valid.")
-                else:
-                    print(f"RFID {data[0]['rfid']} tidak valid.")
-            else:
-                print("Tidak ada RFID dalam data.")
-        else:
-            print("Tidak dapat mengakses scan. Data tidak valid.")
-        time.sleep(1)
+    # Memeriksa koneksi internet
+    if is_connected():
+        print("Koneksi internet terdeteksi, menjalankan fungsi read_device_events...")
+        # Memulai thread untuk mengambil data dari API dan membaca perangkat input
+        threading.Thread(target=fetch_data, args=(url, data, should_read_input), daemon=True).start()
+        threading.Thread(target=read_device_events, args=(dev, should_read_input), daemon=True).start()
+    else:
+        print("Tidak ada koneksi internet, menggunakan valid_rfid...")
+        while True:
+            # Jika tidak ada koneksi, gunakan valid_rfid
+            print(f"RFID yang valid: {valid_rfid}")
+            time.sleep(1)
 
 # Menjalankan program utama
 if __name__ == "__main__":
-    # Memulai thread untuk membaca perangkat input
-    threading.Thread(target=read_device_events, args=(dev, should_read_input), daemon=True).start()
     main()
