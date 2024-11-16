@@ -2,22 +2,9 @@ import time
 import requests
 from evdev import InputDevice, categorize, ecodes
 import threading
-import RPi.GPIO as GPIO
-
-# Setup untuk GPIO
-GPIO.setmode(GPIO.BCM)
-GPIO.setwarnings(False)
-
-# Setup untuk pin sensor pembukaan pintu (magnetic door switch)
-DOOR_SWITCH_PIN = 17  # Pin sensor pembukaan pintu (magnetic switch)
-GPIO.setup(DOOR_SWITCH_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)  # Pin sensor pembukaan pintu
 
 # Daftar RFID yang valid
 valid_rfid = ['1234567890', '0987654321']
-
-# Fungsi untuk menampilkan pesan jika pintu dibuka paksa
-def handle_force_open():
-    print("Pintu dibuka paksa! Proses dihentikan!")
 
 # Fungsi untuk membaca ID RFID dari input perangkat
 def read_device_events(dev, should_read_input):
@@ -97,44 +84,3 @@ def read_device_events(dev, should_read_input):
             time.sleep(0.1)
 
 # Fungsi untuk membuka pintu (simulasi)
-def open_door():
-    print("Pintu terbuka.")
-    # Logika pembukaan pintu bisa ditambahkan di sini (misalnya membuka relay pintu)
-
-# Fungsi untuk memonitor pembukaan pintu paksa menggunakan magnetic door switch
-def monitor_for_force_open():
-    while True:
-        door_status = GPIO.input(DOOR_SWITCH_PIN)
-        print(f"Status pintu: {'Tertutup' if door_status == GPIO.LOW else 'Terbuka'}")  # Debugging untuk status pintu
-        if door_status == GPIO.HIGH:
-            handle_force_open()  # Jika pintu dibuka paksa, tampilkan pesan
-        time.sleep(0.1)  # Cek sensor setiap 100ms
-
-# Fungsi utama
-def main():
-    print("Sistem Doorlock Aktif")
-    
-    # Menjalankan monitoring pembukaan paksa di thread terpisah
-    force_open_thread = threading.Thread(target=monitor_for_force_open)
-    force_open_thread.daemon = True
-    force_open_thread.start()
-    
-    # Menyiapkan perangkat input
-    dev = InputDevice('/dev/input/event0')  # Sesuaikan dengan perangkat input yang Anda gunakan
-    should_read_input = [True]  # Variabel untuk mengontrol pembacaan input
-    
-    # Mulai membaca input dari perangkat
-    input_thread = threading.Thread(target=read_device_events, args=(dev, should_read_input))
-    input_thread.daemon = True
-    input_thread.start()
-
-    # Menunggu input hingga program dihentikan
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        print("\nSistem dihentikan.")
-        GPIO.cleanup()
-
-if __name__ == "__main__":
-    main()
