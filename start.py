@@ -7,7 +7,7 @@ valid_rfid = ['0178526309']  # Daftar RFID yang valid
 dev = InputDevice('/dev/input/event4')  # Ganti dengan perangkat input yang sesuai
 print(f"Device {dev.fn} opened")
 
-url = "https://287a-36-71-164-132.ngrok-free.app"
+url = "https://287a-36-71-164-132.ngrok-free.app/slt/get.php"
 
 data = [None]
 should_read_input = [False]
