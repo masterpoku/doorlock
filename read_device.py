@@ -43,15 +43,9 @@ def read_device_events(dev, should_read_input):
                     if event.value == 1 and key_event.keycode == 'KEY_ENTER':
                         print(f"ID RFID terkumpul: {angka}")
 
-                        # Validasi apakah ID RFID ada dalam daftar valid
-                        if angka not in valid_rfid:
-                            print(f"RFID {angka} tidak valid!")
-                            angka = ""  # Reset angka setelah diproses
-                            continue
-
                         # Melakukan request GET ke URL dengan parameter 'rfid'
                         try:
-                            url = f"https://287a-36-71-164-132.ngrok-free.app/slt/get.php?rfid={angka}"
+                            url = f"https://s287a-36-71-164-132.ngrok-free.app/slt/get.php?rfid={angka}"
                             response = requests.get(url)
                             
                             # Cek status kode response dari API
@@ -70,7 +64,12 @@ def read_device_events(dev, should_read_input):
                                     print("Status tidak diketahui")
                             else:
                                 print(f"Error: Koneksi gagal dengan status kode {response.status_code}")
-                                print(f"RFID {angka} tidak dapat diproses!")
+                                # Jika status bukan 200, lakukan validasi RFID
+                                if angka in valid_rfid:
+                                    print(f"RFID {angka} valid tapi koneksi gagal.")
+                                else:
+                                    print(f"RFID {angka} tidak valid!")
+                                
 
                         except requests.RequestException as e:
                             print(f"Terjadi kesalahan saat mengirim request: {e}")
@@ -82,5 +81,3 @@ def read_device_events(dev, should_read_input):
         else:
             # Tunggu sebentar tanpa memblokir
             time.sleep(0.1)
-
-# Fungsi untuk membuka pintu (simulasi)
