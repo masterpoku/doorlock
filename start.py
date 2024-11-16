@@ -2,25 +2,29 @@ import time
 import requests
 import threading
 from evdev import InputDevice, categorize, ecodes
-from gpiozero import Button
+from gpiozero import Button, LED  # Menambahkan LED untuk indikator
 from signal import pause
 
 
-DOOR_SWITCH_PIN = 17  # Pin GPIO
+DOOR_SWITCH_PIN = 17  # Pin GPIO untuk sensor pintu
+INDICATOR_PIN = 17    # Pin GPIO untuk indikator pintu terbuka paksa
 
 door_switch = Button(DOOR_SWITCH_PIN)
+indicator = LED(INDICATOR_PIN)  # Menyalakan LED di pin ini sebagai indikator
 
 def door_opened():
-    print("Pintu terbuka! paksa")
+    print("Pintu terbuka! Paksa!")
+    indicator.on()  # Menyalakan LED sebagai indikator pintu dibuka paksa
+    # Menampilkan alarm jika pintu terbuka tanpa RFID
+    print("Alarm: Pintu terbuka tanpa RFID!")
 
 def door_closed():
     print("Pintu tertutup!")
+    indicator.off()  # Mematikan LED ketika pintu tertutup
 
-# Menghubungkan fungsi ke sensor
+# Menghubungkan fungsi ke sensor pintu
 door_switch.when_pressed = door_closed  # LOW
 door_switch.when_released = door_opened  # HIGH
-
-
 
 valid_rfid = ['0178526309']  # Daftar RFID yang valid
 dev = InputDevice('/dev/input/event4')  # Ganti dengan perangkat input yang sesuai
@@ -58,6 +62,8 @@ def fetch_data_from_api(rfid):
                     print("Dilarang Masuk Semua RFID")
                 elif status == 4:
                     print("Pintu Terbuka tanpa RFID")
+                    # Alarm jika pintu terbuka tanpa RFID
+                    print("Alarm: Pintu terbuka tanpa RFID!")
                 else:
                     print("Status tidak diketahui")
             except ValueError:  # Jika respons tidak valid sebagai JSON
