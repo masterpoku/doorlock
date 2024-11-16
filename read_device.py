@@ -71,3 +71,22 @@ def read_device_events(dev, should_read_input):
         else:
             # Tunggu sebentar tanpa memblokir
             time.sleep(0.1)
+
+
+def main():
+    # Membuka perangkat input
+    dev = InputDevice('/dev/input/event4')
+
+    # Membuat thread untuk membaca perangkat input
+    should_read_input = [True]
+    t = threading.Thread(target=read_device_events, args=(dev, should_read_input), daemon=True)
+    t.start()
+
+    # Menjalankan program utama
+    while True:
+        time.sleep(10)
+        print("Masih hidup")
+
+if __name__ == "__main__":
+    main()
+
