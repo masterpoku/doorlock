@@ -1,20 +1,33 @@
 import RPi.GPIO as GPIO
 import time
-from mfrc522 import SimpleMFRC522
+from evdev import InputDevice, categorize, ecodes
 import threading
+
+# Daftar RFID yang valid
+valid_rfid = ['0178526309']
+
+# Perangkat input RFID (ganti sesuai perangkat Anda)
+device_path = '/dev/input/event4'
+
+try:
+    dev = InputDevice(device_path)
+    print(f"Device {dev.fn} opened")
+except FileNotFoundError:
+    print(f"Device not found: {device_path}")
+    exit(1)
+except PermissionError:
+    print(f"Permission denied. Try running with sudo.")
+    exit(1)
 
 # Setup untuk GPIO
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
 
 # Setup untuk pin alarm dan sensor pembukaan pintu (magnetic door switch)
-ALARM_PIN = 17            # Pin alarm (sama dengan sensor)
-DOOR_SWITCH_PIN = 17      # Pin sensor pembukaan pintu (magnetic switch)
-GPIO.setup(ALARM_PIN, GPIO.OUT)  # Pin alarm
-GPIO.setup(DOOR_SWITCH_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)  # Pin sensor pembukaan pintu
-
-# Dummy data RFID valid (misalnya, ID RFID yang valid)
-valid_rfid = [1234567890]
+ALARM_PIN = 17            # Pin alarm
+DOOR_SWITCH_PIN = 27      # Pin sensor pembukaan pintu (disesuaikan dengan wiring Anda)
+GPIO.setup(ALARM_PIN, GPIO.OUT)
+GPIO.setup(DOOR_SWITCH_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
 # Fungsi untuk menyalakan alarm
 def trigger_alarm():
@@ -25,42 +38,47 @@ def trigger_alarm():
 
 # Fungsi untuk membaca dan memvalidasi RFID
 def read_rfid():
-    reader = SimpleMFRC522()
     print("Tempatkan RFID pada pembaca...")
-    
-    while True:
-        id, text = reader.read()
-        print(f"ID RFID dibaca: {id}")
-        
-        if id in valid_rfid:
-            print("RFID valid! Membuka pintu...")
-            open_door()
-        else:
-            print("RFID tidak valid. Coba lagi.")
-        
-        time.sleep(1)  # Tunggu sebentar sebelum memulai pemindaian lagi
+    buffer = ""  # Buffer untuk menyimpan input RFID sementara
+    for event in dev.read_loop():
+        if event.type == ecodes.EV_KEY and event.value == 1:  # Hanya event keypress
+            key = categorize(event).keycode
+            if key.startswith("KEY_"):
+                key_char = key.replace("KEY_", "")
+
+                if key_char.isdigit():  # Menambahkan digit ke buffer
+                    buffer += key_char
+                elif key_char == "ENTER":  # Akhiri input dengan ENTER
+                    print(f"ID RFID dibaca: {buffer}")
+                    if buffer in valid_rfid:
+                        print("RFID valid! Membuka pintu...")
+                        open_door()
+                    else:
+                        print("RFID tidak valid. Coba lagi.")
+                    buffer = ""  # Reset buffer
 
 # Fungsi untuk membuka pintu (simulasi)
 def open_door():
     print("Pintu terbuka.")
-    # Logika pembukaan pintu bisa ditambahkan di sini (misalnya membuka relay pintu)
+    # Tambahkan logika pembukaan pintu (misalnya mengaktifkan relay)
 
 # Fungsi untuk memonitor pembukaan pintu paksa menggunakan magnetic door switch
 def monitor_for_force_open():
     while True:
         if GPIO.input(DOOR_SWITCH_PIN) == GPIO.HIGH:
-            trigger_alarm()  # Deteksi pembukaan pintu paksa
+            print("Pintu dibuka paksa!")
+            trigger_alarm()
         time.sleep(0.1)  # Cek sensor setiap 100ms
 
 # Fungsi utama
 def main():
     print("Sistem Doorlock Aktif")
-    
+
     # Menjalankan monitoring pembukaan paksa di thread terpisah
     force_open_thread = threading.Thread(target=monitor_for_force_open)
     force_open_thread.daemon = True
     force_open_thread.start()
-    
+
     # Mulai pemindaian RFID
     read_rfid()
 
@@ -69,4 +87,7 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:
         print("\nSistem dihentikan.")
+        GPIO.cleanup()  # Membersihkan konfigurasi GPIO
+    except Exception as e:
+        print(f"Terjadi kesalahan: {e}")
         GPIO.cleanup()
