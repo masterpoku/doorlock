@@ -73,6 +73,10 @@ def monitor_for_force_open():
 # Fungsi untuk menanggapi saat pintu dibuka
 def door_opened():
     print("Pintu terbuka!")
+    # Memeriksa apakah pintu dibuka paksa
+    if door_switch.is_pressed:
+        print("Pintu dibuka paksa!")
+        trigger_alarm()
 
 # Fungsi untuk menanggapi saat pintu tertutup
 def door_closed():
