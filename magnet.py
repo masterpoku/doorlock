@@ -1,7 +1,7 @@
 from gpiozero import Button
 from signal import pause
 
-DOOR_SWITCH_PIN = 17  # Pin GPIO
+DOOR_SWITCH_PIN = 9  # Pin GPIO
 
 door_switch = Button(DOOR_SWITCH_PIN)
 
