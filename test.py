@@ -23,6 +23,7 @@ except PermissionError:
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
 
+
 # Setup untuk pin alarm dan sensor pembukaan pintu (magnetic door switch)
 ALARM_PIN = 17            # Pin alarm
 DOOR_SWITCH_PIN = 9      # Pin sensor pembukaan pintu (disesuaikan dengan wiring Anda)
