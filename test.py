@@ -1,6 +1,7 @@
 from evdev import InputDevice, categorize, ecodes
 from gpiozero import Button, LED
 from signal import pause
+import threading
 
 # Konfigurasi pin GPIO
 DOOR_SWITCH_PIN = 9  # Pin sensor pembukaan pintu (magnetic door switch)
