@@ -1,7 +1,6 @@
-import time
 from evdev import InputDevice, categorize, ecodes
-import threading
 from gpiozero import Button, LED
+from signal import pause
 
 # Konfigurasi pin GPIO
 DOOR_SWITCH_PIN = 9  # Pin sensor pembukaan pintu (magnetic door switch)
@@ -17,7 +16,7 @@ valid_rfid = ['0178526309']
 # Perangkat input RFID (ganti sesuai perangkat Anda)
 device_path = '/dev/input/event4'
 
-# Status pintu dan validasi RFID
+# Status global untuk RFID dan alarm
 rfid_valid = False
 rfid_scanned = False  # Untuk mengecek apakah RFID telah discan
 
@@ -45,8 +44,9 @@ def disable_alarm():
 # Fungsi untuk membaca dan memvalidasi RFID
 def read_rfid():
     global rfid_valid, rfid_scanned
-    print("Tempatkan RFID pada pembaca...")
+
     buffer = ""  # Buffer untuk menyimpan input RFID sementara
+    print("Tempatkan RFID pada pembaca...")
     for event in dev.read_loop():
         if event.type == ecodes.EV_KEY and event.value == 1:  # Hanya event keypress
             key = categorize(event).keycode
@@ -68,34 +68,40 @@ def read_rfid():
                         trigger_alarm("RFID tidak valid.")
                     buffer = ""  # Reset buffer
 
-# Fungsi untuk memonitor pintu
-def monitor_door():
+# Fungsi untuk menangani event pintu terbuka
+def door_opened():
     global rfid_valid, rfid_scanned
-    while True:
-        if door_switch.is_pressed:  # Pintu tertutup
-            print("Pintu tertutup.")
-            rfid_valid = False  # Reset status RFID saat pintu tertutup
-            rfid_scanned = False  # Reset status scan RFID
-            disable_alarm()
-        else:  # Pintu terbuka
-            print("Pintu terbuka!")
-            if not rfid_scanned:  # Jika RFID belum discan
-                trigger_alarm("Pintu terbuka tanpa RFID!")
-            elif not rfid_valid:  # Jika RFID discan tetapi tidak valid
-                trigger_alarm("Pintu terbuka dengan RFID tidak valid!")
-        time.sleep(0.1)  # Cek sensor setiap 100ms
+    print("Pintu terbuka!")
+
+    # Jika RFID belum discan, alarm langsung aktif
+    if not rfid_scanned:
+        trigger_alarm("Pintu terbuka tanpa RFID!")
+    elif not rfid_valid:  # Jika RFID discan tetapi tidak valid
+        trigger_alarm("Pintu terbuka dengan RFID tidak valid!")
+
+# Fungsi untuk menangani event pintu tertutup
+def door_closed():
+    global rfid_valid, rfid_scanned
+    print("Pintu tertutup.")
+    # Reset status RFID
+    rfid_valid = False
+    rfid_scanned = False
+    disable_alarm()
+
+# Menghubungkan event door_switch dengan fungsi handler
+door_switch.when_pressed = door_closed  # Event: Pintu tertutup
+door_switch.when_released = door_opened  # Event: Pintu terbuka
 
 # Fungsi utama
 def main():
     print("Sistem Doorlock Aktif")
 
-    # Menjalankan monitoring pintu di thread terpisah
-    monitor_thread = threading.Thread(target=monitor_door)
-    monitor_thread.daemon = True
-    monitor_thread.start()
+    # Menjalankan pembacaan RFID secara paralel
+    rfid_thread = threading.Thread(target=read_rfid, daemon=True)
+    rfid_thread.start()
 
-    # Mulai pemindaian RFID
-    read_rfid()
+    # Stream event-driven dengan pause
+    pause()
 
 if __name__ == "__main__":
     try:
