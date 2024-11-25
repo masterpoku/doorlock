@@ -2,13 +2,12 @@ import time
 from evdev import InputDevice, categorize, ecodes
 import threading
 from gpiozero import Button, LED
-from signal import pause
 
 # Konfigurasi pin GPIO
 DOOR_SWITCH_PIN = 9  # Pin sensor pembukaan pintu (magnetic door switch)
 ALARM_PIN = 17       # Pin untuk alarm
 
-# Inisialisasi sensor pintu
+# Inisialisasi sensor pintu dan alarm
 door_switch = Button(DOOR_SWITCH_PIN)
 alarm = LED(ALARM_PIN)  # LED digunakan untuk alarm
 
@@ -17,6 +16,9 @@ valid_rfid = ['0178526309']
 
 # Perangkat input RFID (ganti sesuai perangkat Anda)
 device_path = '/dev/input/event4'
+
+# Status pintu dan validasi RFID
+door_opened_by_valid_rfid = False
 
 # Coba buka perangkat input RFID
 try:
@@ -29,20 +31,29 @@ except PermissionError:
     print(f"Permission denied. Try running with sudo.")
     exit(1)
 
-# Fungsi untuk membuka pintu (simulasi)
+# Fungsi untuk membuka pintu
 def open_door():
+    global door_opened_by_valid_rfid
+    door_opened_by_valid_rfid = True
     print("Pintu terbuka.")
-    # Tambahkan logika pembukaan pintu (misalnya mengaktifkan relay)
+    # Tambahkan logika pembukaan pintu fisik di sini (misalnya mengaktifkan relay)
 
 # Fungsi untuk menyalakan alarm
 def trigger_alarm():
     print("Pintu dibuka paksa! Alarm aktif!")
     alarm.on()  # Menyalakan alarm
-    time.sleep(3)
-    alarm.off()  # Mematikan alarm
+
+# Fungsi untuk mematikan alarm dengan delay
+def disable_alarm_with_delay():
+    print("Pintu tertutup tanpa RFID valid. Alarm akan mati dalam 30 detik...")
+    time.sleep(30)
+    if door_switch.is_pressed and not door_opened_by_valid_rfid:  # Pastikan pintu masih tertutup dan tidak ada RFID valid
+        print("Alarm dimatikan setelah 30 detik.")
+        alarm.off()
 
 # Fungsi untuk membaca dan memvalidasi RFID
 def read_rfid():
+    global door_opened_by_valid_rfid
     print("Tempatkan RFID pada pembaca...")
     buffer = ""  # Buffer untuk menyimpan input RFID sementara
     for event in dev.read_loop():
@@ -59,41 +70,39 @@ def read_rfid():
                         print("RFID valid! Membuka pintu...")
                         open_door()
                     else:
-                        print("RFID tidak valid. Coba lagi.")
+                        print("RFID tidak valid.")
                     buffer = ""  # Reset buffer
 
-# Fungsi untuk memonitor pembukaan pintu paksa menggunakan magnetic door switch
-def monitor_for_force_open():
+# Fungsi untuk memonitor pintu
+def monitor_door():
+    global door_opened_by_valid_rfid
     while True:
-        if door_switch.is_pressed:  # Menggunakan fungsi is_pressed dari gpiozero
-            print("Pintu dibuka paksa!")
-            trigger_alarm()
+        if door_switch.is_pressed:  # Pintu tertutup
+            if alarm.is_lit:  # Jika alarm aktif
+                if not door_opened_by_valid_rfid:  # Tidak ada RFID valid
+                    # Matikan alarm dengan delay
+                    disable_thread = threading.Thread(target=disable_alarm_with_delay)
+                    disable_thread.start()
+                else:
+                    print("Pintu tertutup dengan RFID valid. Alarm mati.")
+                    alarm.off()
+            door_opened_by_valid_rfid = False  # Reset status validasi RFID
+        else:  # Pintu terbuka
+            if not door_opened_by_valid_rfid:
+                print("Pintu dibuka tanpa RFID valid!")
+                trigger_alarm()
+            else:
+                print("Pintu dibuka dengan RFID valid.")
         time.sleep(0.1)  # Cek sensor setiap 100ms
-
-# Fungsi untuk menanggapi saat pintu dibuka
-def door_opened():
-    print("Pintu terbuka!")
-    # Memeriksa apakah pintu dibuka paksa
-    if door_switch.is_pressed:
-        print("Pintu dibuka paksa!")
-        trigger_alarm()
-
-# Fungsi untuk menanggapi saat pintu tertutup
-def door_closed():
-    print("Pintu tertutup!")
-
-# Menghubungkan fungsi ke sensor pintu
-door_switch.when_pressed = door_closed  # LOW
-door_switch.when_released = door_opened  # HIGH
 
 # Fungsi utama
 def main():
     print("Sistem Doorlock Aktif")
 
-    # Menjalankan monitoring pembukaan paksa di thread terpisah
-    force_open_thread = threading.Thread(target=monitor_for_force_open)
-    force_open_thread.daemon = True
-    force_open_thread.start()
+    # Menjalankan monitoring pintu di thread terpisah
+    monitor_thread = threading.Thread(target=monitor_door)
+    monitor_thread.daemon = True
+    monitor_thread.start()
 
     # Mulai pemindaian RFID
     read_rfid()
