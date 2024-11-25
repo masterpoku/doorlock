@@ -58,8 +58,6 @@ def read_rfid():
                     if buffer in valid_rfid:
                         print("RFID valid! Membuka pintu...")
                         open_door()
-                        global rfid_validated
-                        rfid_validated = True  # Set status RFID valid
                     else:
                         print("RFID tidak valid. Coba lagi.")
                     buffer = ""  # Reset buffer
@@ -68,12 +66,8 @@ def read_rfid():
 def monitor_for_force_open():
     while True:
         if door_switch.is_pressed:  # Menggunakan fungsi is_pressed dari gpiozero
-            if not rfid_validated:  # Jika RFID tidak valid, anggap sebagai pembukaan paksa
-                print("Pintu dibuka paksa!")
-                trigger_alarm()
-            else:
-                print("Pintu terbuka dengan validasi RFID.")
-            rfid_validated = False  # Reset status RFID setelah pintu dibuka
+            print("Pintu dibuka paksa!")
+            trigger_alarm()
         time.sleep(0.1)  # Cek sensor setiap 100ms
 
 # Fungsi untuk menanggapi saat pintu dibuka
@@ -91,9 +85,6 @@ def door_closed():
 # Menghubungkan fungsi ke sensor pintu
 door_switch.when_pressed = door_closed  # LOW
 door_switch.when_released = door_opened  # HIGH
-
-# Variabel untuk menyimpan status validasi RFID
-rfid_validated = False
 
 # Fungsi utama
 def main():

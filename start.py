@@ -1,107 +1,100 @@
 import time
-import requests
-import threading
 from evdev import InputDevice, categorize, ecodes
+import threading
+from gpiozero import Button, LED
+from signal import pause
 
-valid_rfid = ['0178526309']  # Daftar RFID yang valid
-dev = InputDevice('/dev/input/event4')  # Ganti dengan perangkat input yang sesuai
-print(f"Device {dev.fn} opened")
+# Konfigurasi pin GPIO
+DOOR_SWITCH_PIN = 9  # Pin sensor pembukaan pintu (magnetic door switch)
+ALARM_PIN = 17       # Pin untuk alarm
 
-url = "https://5370-36-71-164-132.ngrok-free.app/slt/get.php"
+# Inisialisasi sensor pintu
+door_switch = Button(DOOR_SWITCH_PIN)
+alarm = LED(ALARM_PIN)  # LED digunakan untuk alarm
 
-data = [None]
-should_read_input = [False]
+# Daftar RFID yang valid
+valid_rfid = ['0178526309']
 
-# Status koneksi
-connection_status = False
-rfid_data = ""  # Menyimpan data RFID yang terkumpul
+# Perangkat input RFID (ganti sesuai perangkat Anda)
+device_path = '/dev/input/event4'
 
-# Fungsi untuk memeriksa koneksi internet
-def is_connected():
-    try:
-        response = requests.get(url, timeout=5)
-        return response.status_code == 200
-    except requests.RequestException:
-        return False
+# Status pintu dan validasi RFID
+door_opened_by_valid_rfid = False
 
-# Fungsi untuk mengambil data dari API dan memverifikasi RFID
-def fetch_data_from_api(rfid):
-    try:
-        response = requests.get(f"{url}?rfid={rfid}")
-        if response.status_code == 200:
-            try:
-                status = response.json()  # Coba untuk mengonversi respons ke JSON
-                if status == 1:
-                    print("Membuka pintu")
-                elif status == 2:
-                    print("Registrasi RFID")
-                elif status == 3:
-                    print("Dilarang Masuk Semua RFID")
-                elif status == 4:
-                    print("Pintu Terbuka tanpa RFID")
-                else:
-                    print("Status tidak diketahui")
-            except ValueError:  # Jika respons tidak valid sebagai JSON
-                print(f"Kesalahan: Respons tidak dapat dikonversi ke JSON. Konten: {response.text}")
-        else:
-            print(f"Error: Koneksi gagal dengan status kode {response.status_code}")
-    except requests.RequestException as e:
-        print(f"Terjadi kesalahan saat mengirim request: {e}")
+# Coba buka perangkat input RFID
+try:
+    dev = InputDevice(device_path)
+    print(f"Device {dev.fn} opened")
+except FileNotFoundError:
+    print(f"Device not found: {device_path}")
+    exit(1)
+except PermissionError:
+    print(f"Permission denied. Try running with sudo.")
+    exit(1)
 
-# Fungsi untuk membaca ID RFID dari input perangkat
-def read_device_events(dev, should_read_input):
-    global rfid_data
+# Fungsi untuk membuka pintu (simulasi)
+def open_door():
+    global door_opened_by_valid_rfid
+    door_opened_by_valid_rfid = True
+    print("Pintu terbuka.")
+    time.sleep(5)  # Simulasi waktu pintu terbuka
+    door_opened_by_valid_rfid = False
+    print("Pintu otomatis tertutup.")
+
+# Fungsi untuk menyalakan alarm
+def trigger_alarm():
+    print("Pintu dibuka paksa! Alarm aktif!")
+    alarm.on()  # Menyalakan alarm
+    time.sleep(3)
+    alarm.off()  # Mematikan alarm
+
+# Fungsi untuk membaca dan memvalidasi RFID
+def read_rfid():
+    global door_opened_by_valid_rfid
+    print("Tempatkan RFID pada pembaca...")
+    buffer = ""  # Buffer untuk menyimpan input RFID sementara
+    for event in dev.read_loop():
+        if event.type == ecodes.EV_KEY and event.value == 1:  # Hanya event keypress
+            key = categorize(event).keycode
+            if key.startswith("KEY_"):
+                key_char = key.replace("KEY_", "")
+
+                if key_char.isdigit():  # Menambahkan digit ke buffer
+                    buffer += key_char
+                elif key_char == "ENTER":  # Akhiri input dengan ENTER
+                    print(f"ID RFID dibaca: {buffer}")
+                    if buffer in valid_rfid:
+                        print("RFID valid! Membuka pintu...")
+                        open_door()
+                    else:
+                        print("RFID tidak valid. Alarm tetap aktif.")
+                    buffer = ""  # Reset buffer
+
+# Fungsi untuk memonitor pembukaan pintu paksa menggunakan magnetic door switch
+def monitor_door():
+    global door_opened_by_valid_rfid
     while True:
-        if should_read_input[0]:
-            try:
-                event = dev.read_one()  # Membaca satu event tanpa memblokir
-                if event:
-                    if event.type == ecodes.EV_KEY:
-                        key_event = categorize(event)
-                        if event.value == 1:  # Jika tombol ditekan
-                            if key_event.keycode in ['KEY_0', 'KEY_1', 'KEY_2', 'KEY_3', 'KEY_4', 'KEY_5', 'KEY_6', 'KEY_7', 'KEY_8', 'KEY_9']:
-                                rfid_data += key_event.keycode[-1]  # Mengambil angka dari keycode
+        if door_switch.is_pressed and not door_opened_by_valid_rfid:
+            print("Pintu dibuka tanpa RFID valid!")
+            trigger_alarm()
+        time.sleep(0.1)  # Cek sensor setiap 100ms
 
-                    # Jika tombol Enter ditekan
-                    if event.value == 1 and key_event.keycode == 'KEY_ENTER':
-                        print(f"ID RFID terkumpul: {rfid_data}")
-                        if connection_status:
-                            fetch_data_from_api(rfid_data)  # Mengambil data dari API jika koneksi ada
-                        else:
-                            print(f"Data RFID pasif: {rfid_data}")  # Gunakan data RFID secara pasif
-                            if rfid_data in valid_rfid:
-                                print("RFID valid! Membuka pintu...")
-                            else:
-                                print("RFID tidak valid. Coba lagi.")
-                        rfid_data = ""  # Reset setelah diproses
-            except BlockingIOError:
-                pass  # Tidak ada event, lanjutkan loop
-        else:
-            time.sleep(0.1)
-
-# Fungsi untuk memeriksa koneksi dan mengelola logika pembacaan RFID
+# Fungsi utama
 def main():
-    global connection_status, should_read_input
+    print("Sistem Doorlock Aktif")
 
-    while True:
-        if is_connected():
-            if not connection_status:
-                print("Koneksi internet terdeteksi, melanjutkan pengecekan data RFID...")
-                # Jika koneksi pulih, mulai membaca input RFID
-                should_read_input[0] = True
-                connection_status = True
-        else:
-            if connection_status:
-                print("Koneksi internet terputus, menggunakan data RFID pasif...")
-                should_read_input[0] = True  # Tetap membaca input RFID meskipun tidak ada koneksi
-                connection_status = False
+    # Menjalankan monitoring pembukaan paksa di thread terpisah
+    monitor_thread = threading.Thread(target=monitor_door)
+    monitor_thread.daemon = True
+    monitor_thread.start()
 
-        # Tunggu sebelum memeriksa koneksi lagi
-        time.sleep(5)
+    # Mulai pemindaian RFID
+    read_rfid()
 
 if __name__ == "__main__":
-    # Menjalankan fungsi pembacaan perangkat input di thread terpisah
-    threading.Thread(target=read_device_events, args=(dev, should_read_input), daemon=True).start()
-
-    # Menjalankan program utama
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nSistem dihentikan.")
+    except Exception as e:
+        print(f"Terjadi kesalahan: {e}")
