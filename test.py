@@ -17,7 +17,7 @@ rfid_valid = False
 rfid_scanned = False  # Untuk mengecek apakah RFID telah discan
 
 # URL API untuk mengambil daftar RFID valid
-API_URL = "http://localhost/api/get_valid_rfid.php"
+API_URL = "https://ac6b-36-71-169-158.ngrok-free.app/slt/api.php"
 
 # Fungsi untuk mengambil data RFID valid dari API
 def get_valid_rfid_from_api():
