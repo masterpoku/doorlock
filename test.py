@@ -1,4 +1,4 @@
-from evdev import InputDevice, categorize, ecodes, list_devices
+from evdev import InputDevice, list_devices, categorize, ecodes
 from gpiozero import Button, LED
 from signal import pause
 import threading
@@ -23,8 +23,8 @@ rfid_scanned = False  # Untuk mengecek apakah RFID telah discan
 def find_rfid_device():
     devices = [InputDevice(path) for path in list_devices()]
     for device in devices:
-        if 'RFID' in device.name:  # Ganti "RFID" sesuai nama perangkat Anda
-            print(f"RFID device found: {device.path}")
+        if "IC Reader" in device.name or "RFID" in device.name:  # Ganti sesuai nama perangkat Anda
+            print(f"RFID device found: {device.name} at {device.path}")
             return device
     print("RFID device not found!")
     return None
