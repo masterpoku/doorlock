@@ -1,4 +1,4 @@
-from evdev import InputDevice, categorize, ecodes
+from evdev import InputDevice, categorize, ecodes, list_devices
 from gpiozero import Button, LED
 from signal import pause
 import threading
@@ -14,22 +14,25 @@ alarm = LED(ALARM_PIN)  # LED digunakan untuk alarm
 # Daftar RFID yang valid
 valid_rfid = ['0178526309']
 
-# Perangkat input RFID (ganti sesuai perangkat Anda)
-device_path = '/dev/input/event4'
-
 # Status global untuk RFID dan alarm
 rfid_valid = False
 rfid_scanned = False  # Untuk mengecek apakah RFID telah discan
 
-# Coba buka perangkat input RFID
-try:
-    dev = InputDevice(device_path)
-    print(f"Device {dev.fn} opened")
-except FileNotFoundError:
-    print(f"Device not found: {device_path}")
-    exit(1)
-except PermissionError:
-    print(f"Permission denied. Try running with sudo.")
+
+# Fungsi untuk menemukan perangkat RFID secara dinamis
+def find_rfid_device():
+    devices = [InputDevice(path) for path in list_devices()]
+    for device in devices:
+        if 'RFID' in device.name:  # Ganti "RFID" sesuai nama perangkat Anda
+            print(f"RFID device found: {device.path}")
+            return device
+    print("RFID device not found!")
+    return None
+
+# Coba temukan perangkat RFID
+dev = find_rfid_device()
+if not dev:
+    print("Tidak dapat menemukan perangkat RFID. Pastikan perangkat terhubung.")
     exit(1)
 
 # Fungsi untuk menyalakan alarm
