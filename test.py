@@ -98,7 +98,7 @@ def read_rfid():
                     else:
                         print("RFID tidak valid.")
                         rfid_valid = False
-                        trigger_alarm("RFID tidak valid.")
+                        # trigger_alarm("RFID tidak valid.")
                     buffer = ""  # Reset buffer
 
 # Fungsi untuk menangani event pintu terbuka
