@@ -2,7 +2,6 @@ from evdev import InputDevice, list_devices, categorize, ecodes
 from gpiozero import Button, LED
 from signal import pause
 import threading
-import requests
 
 # Konfigurasi pin GPIO
 DOOR_SWITCH_PIN = 9  # Pin sensor pembukaan pintu (magnetic door switch)
@@ -12,41 +11,13 @@ ALARM_PIN = 17       # Pin untuk alarm
 door_switch = Button(DOOR_SWITCH_PIN)
 alarm = LED(ALARM_PIN)  # LED digunakan untuk alarm
 
+# Daftar RFID yang valid
+valid_rfid = ['0178526309']
+
 # Status global untuk RFID dan alarm
 rfid_valid = False
 rfid_scanned = False  # Untuk mengecek apakah RFID telah discan
 
-# URL API untuk mengambil daftar RFID valid
-API_URL = "https://ac6b-36-71-169-158.ngrok-free.app/slt/api.php"
-
-# Fungsi untuk mengambil data RFID valid dari API
-def get_valid_rfid_from_api():
-    try:
-        # Kirimkan request GET ke API
-        response = requests.get(API_URL)
-        
-        # Pastikan response statusnya OK (200)
-        if response.status_code == 200:
-            # Parse JSON response
-            data = response.json()
-            
-            # Jika data ada, ekstrak RFID dari data
-            if isinstance(data, list):
-                valid_rfid = [item['rfid'] for item in data]
-                print(f"Daftar RFID valid: {valid_rfid}")
-                return valid_rfid
-            else:
-                print("Data RFID kosong atau tidak valid.")
-                return []
-        else:
-            print(f"Error: Gagal mendapatkan data (Status Code: {response.status_code})")
-            return []
-    except Exception as e:
-        print(f"Terjadi kesalahan saat mengakses API: {e}")
-        return []
-
-# Menyimpan daftar RFID valid yang diambil dari API
-valid_rfid = get_valid_rfid_from_api()
 
 # Fungsi untuk menemukan perangkat RFID secara dinamis
 def find_rfid_device():
@@ -98,7 +69,7 @@ def read_rfid():
                     else:
                         print("RFID tidak valid.")
                         rfid_valid = False
-                        # trigger_alarm("RFID tidak valid.")
+                        trigger_alarm("RFID tidak valid.")
                     buffer = ""  # Reset buffer
 
 # Fungsi untuk menangani event pintu terbuka
