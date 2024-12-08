@@ -77,6 +77,32 @@ def disable_alarm():
     print("Alarm dimatikan.")
     alarm.off()
 
+# Fungsi untuk mengecek status mode registrasi
+# Fungsi untuk mengecek status mode registrasi
+def check_registration_mode():
+    try:
+        response = requests.get(STATUS_URL, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        if isinstance(data, list) and len(data) > 0:
+            status = data[0].get('status')
+            if status == 1:
+                print("Mode registrasi RFID baru aktif!")
+                return "register"
+            elif status == 2:
+                print("Mode buka semua RFID aktif!")
+                return "open_all"
+            elif status == 3:
+                print("Mode kunci semua RFID aktif!")
+                return "lock_all"
+            else:
+                print("Mode tidak dikenali.")
+                return "unknown"
+        print("Mode tidak aktif atau data kosong.")
+        return "inactive"
+    except requests.RequestException as e:
+        print(f"Terjadi kesalahan saat mengecek status registrasi: {e}")
+        return "error"
 
 # Fungsi untuk membaca dan memvalidasi RFID
 def read_rfid(valid_rfid):
@@ -92,14 +118,21 @@ def read_rfid(valid_rfid):
                     buffer += key_char
                 elif key_char == "ENTER":
                     print(f"ID RFID dibaca: {buffer}")
-                    with rfid_lock:
-                        if buffer in valid_rfid:
-                            print("RFID valid!")
+                    mode = check_registration_mode()  # Periksa mode dari API
+                    if mode == "register":
+                        print("Mendaftarkan RFID baru...")
+                        register_new_rfid(buffer)  # Daftarkan RFID baru
+                    elif mode == "open_all":
+                        print("RFID diterima dalam mode buka semua.")
+                        disable_alarm()
+                    elif buffer in valid_rfid:
+                        print("RFID valid!")
+                        with rfid_lock:
                             rfid_valid_used = True
                             disable_alarm()
-                        else:
-                            print("RFID tidak valid!")
-                            trigger_gagal("RFID tidak valid.")
+                    else:
+                        print("RFID tidak valid!")
+                        trigger_gagal("RFID tidak valid.")
                     buffer = ""
 
 
