@@ -12,54 +12,62 @@ ALARM_PIN = 17       # Pin untuk alarm
 door_switch = Button(DOOR_SWITCH_PIN)
 alarm = LED(ALARM_PIN)  # LED digunakan untuk alarm
 
-# Status global untuk RFID dan alarm
-rfid_valid = False
-rfid_scanned = False  # Untuk mengecek apakah RFID telah discan
-
 # URL API
-API_URL = "https://d98f-36-71-165-154.ngrok-free.app/slt/api.php"
+API_URL = "https://18c7-182-1-97-30.ngrok-free.app/slt/api.php"
 STATUS_URL = f"{API_URL}?mode=status"
 
 # Fungsi untuk mengambil data RFID valid dari API
 def get_valid_rfid_from_api():
     try:
-        response = requests.get(API_URL)
-        if response.status_code == 200:
-            data = response.json()
-            if isinstance(data, list):
-                valid_rfid = [item['rfid'] for item in data]
-                print(f"Daftar RFID valid: {valid_rfid}")
-                return valid_rfid
-            else:
-                print("Data RFID kosong atau tidak valid.")
-                return []
+        response = requests.get(API_URL, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        if isinstance(data, list):
+            valid_rfid = [item['rfid'] for item in data]
+            print(f"Daftar RFID valid: {valid_rfid}")
+            return valid_rfid
         else:
-            print(f"Error: Gagal mendapatkan data (Status Code: {response.status_code})")
+            print("Data RFID kosong atau tidak valid.")
             return []
-    except Exception as e:
+    except requests.RequestException as e:
         print(f"Terjadi kesalahan saat mengakses API: {e}")
         return []
+
+# Fungsi untuk mendaftarkan RFID baru ke API
+def register_new_rfid(rfid):
+    try:
+        url = f"https://18c7-182-1-97-30.ngrok-free.app/slt/registrasi.php?rfid={rfid}"
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        print(f"RFID {rfid} berhasil didaftarkan!")
+    except requests.RequestException as e:
+        print(f"Terjadi kesalahan saat mendaftarkan RFID: {e}")
 
 # Fungsi untuk mengecek status mode registrasi
 def check_registration_mode():
     try:
-        response = requests.get(STATUS_URL)
-        if response.status_code == 200:
-            data = response.json()
-            if isinstance(data, list) and len(data) > 0:
-                # Ambil status dari data pertama
-                if 'status' in data[0] and data[0]['status'] == 1:
-                    print("Mode registrasi RFID baru aktif!")
-                    return True
-        print("Mode registrasi tidak aktif.")
-        return False
-    except Exception as e:
+        response = requests.get(STATUS_URL, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        if isinstance(data, list) and len(data) > 0:
+            status = data[0].get('status', 0)
+            if status == 1:
+                print("Mode registrasi RFID baru aktif!")
+                return "register"
+            elif status == 2:
+                print("Mode buka semua RFID aktif!")
+                return "open_all"
+            elif status == 3:
+                print("Mode kunci semua RFID aktif!")
+                return "lock_all"
+            else:
+                print("Mode tidak dikenali.")
+        else:
+            print("Mode registrasi tidak aktif atau data kosong.")
+        return "inactive"
+    except requests.RequestException as e:
         print(f"Terjadi kesalahan saat mengecek status registrasi: {e}")
-        return False
-
-
-# Menyimpan daftar RFID valid
-valid_rfid = get_valid_rfid_from_api()
+        return "error"
 
 # Fungsi untuk menemukan perangkat RFID secara dinamis
 def find_rfid_device():
@@ -70,12 +78,6 @@ def find_rfid_device():
             return device
     print("RFID device not found!")
     return None
-
-# Coba temukan perangkat RFID
-dev = find_rfid_device()
-if not dev:
-    print("Tidak dapat menemukan perangkat RFID. Pastikan perangkat terhubung.")
-    exit(1)
 
 # Fungsi untuk menyalakan alarm
 def trigger_alarm(reason=""):
@@ -88,9 +90,7 @@ def disable_alarm():
     alarm.off()
 
 # Fungsi untuk membaca dan memvalidasi RFID
-def read_rfid():
-    global rfid_valid, rfid_scanned
-
+def read_rfid(valid_rfid):
     buffer = ""  # Buffer untuk menyimpan input RFID sementara
     print("Tempatkan RFID pada pembaca...")
     for event in dev.read_loop():
@@ -98,51 +98,57 @@ def read_rfid():
             key = categorize(event).keycode
             if key.startswith("KEY_"):
                 key_char = key.replace("KEY_", "")
-
-                if key_char.isdigit():  # Menambahkan digit ke buffer
+                if key_char.isdigit():
                     buffer += key_char
-                elif key_char == "ENTER":  # Akhiri input dengan ENTER
+                elif key_char == "ENTER":
                     print(f"ID RFID dibaca: {buffer}")
-                    rfid_scanned = True
                     if buffer in valid_rfid:
                         print("RFID valid!")
-                        rfid_valid = True
                         disable_alarm()
+                        return True, buffer
                     else:
                         print("RFID tidak valid.")
-                        rfid_valid = False
-                        # Periksa mode registrasi
-                        if check_registration_mode():
-                            print(f"Mode registrasi: Tambahkan RFID baru {buffer} ke sistem.")
+                        mode = check_registration_mode()
+                        if mode == "register":
+                            register_new_rfid(buffer)
+                            valid_rfid.append(buffer)
+                        elif mode == "lock_all":
+                            print("Mengunci semua RFID. Akses ditolak.")
+                            return False, buffer
+                        elif mode == "open_all":
+                            print("Membuka semua RFID. Akses diperbolehkan.")
+                            disable_alarm()
+                            return True, buffer
                         else:
-                            trigger_alarm("RFID tidak valid dan tidak dalam mode registrasi!")
+                            trigger_alarm("RFID tidak valid!")
                     buffer = ""  # Reset buffer
+    return False, ""
 
 # Fungsi untuk menangani event pintu terbuka
-def door_opened():
-    global rfid_valid, rfid_scanned
+def door_opened(rfid_valid):
     print("Pintu terbuka!")
-    if not rfid_scanned:
-        trigger_alarm("Pintu terbuka tanpa RFID!")
-    elif not rfid_valid:
-        trigger_alarm("Pintu terbuka dengan RFID tidak valid!")
+    if not rfid_valid:
+        trigger_alarm("Pintu terbuka tanpa RFID valid!")
 
 # Fungsi untuk menangani event pintu tertutup
 def door_closed():
-    global rfid_valid, rfid_scanned
     print("Pintu tertutup.")
-    rfid_valid = False
-    rfid_scanned = False
     disable_alarm()
 
 # Menghubungkan event door_switch dengan fungsi handler
 door_switch.when_pressed = door_closed
-door_switch.when_released = door_opened
+door_switch.when_released = lambda: door_opened(False)
 
 # Fungsi utama
 def main():
     print("Sistem Doorlock Aktif")
-    rfid_thread = threading.Thread(target=read_rfid, daemon=True)
+    valid_rfid = get_valid_rfid_from_api()
+    global dev
+    dev = find_rfid_device()
+    if not dev:
+        print("Tidak dapat menemukan perangkat RFID. Pastikan perangkat terhubung.")
+        exit(1)
+    rfid_thread = threading.Thread(target=read_rfid, args=(valid_rfid,), daemon=True)
     rfid_thread.start()
     pause()
 
