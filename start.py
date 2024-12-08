@@ -26,6 +26,7 @@ def get_valid_rfid_from_api():
         response = requests.get(API_URL)
         if response.status_code == 200:
             data = response.json()
+            print(data)
             if isinstance(data, list):
                 valid_rfid = [item['rfid'] for item in data]
                 print(f"Daftar RFID valid: {valid_rfid}")
