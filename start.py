@@ -131,6 +131,7 @@ def door_opened(rfid_valid):
     disable_alarm()
     if not rfid_valid:
         trigger_alarm("Pintu terbuka tanpa RFID valid!")
+        
 
 # Fungsi untuk menangani event pintu tertutup
 def door_closed():
