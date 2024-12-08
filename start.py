@@ -46,14 +46,17 @@ def check_registration_mode():
         response = requests.get(STATUS_URL)
         if response.status_code == 200:
             data = response.json()
-            if 'status' in data and data['status'] == 1:
-                print("Mode registrasi RFID baru aktif!")
-                return True
+            if isinstance(data, list) and len(data) > 0:
+                # Ambil status dari data pertama
+                if 'status' in data[0] and data[0]['status'] == 1:
+                    print("Mode registrasi RFID baru aktif!")
+                    return True
         print("Mode registrasi tidak aktif.")
         return False
     except Exception as e:
         print(f"Terjadi kesalahan saat mengecek status registrasi: {e}")
         return False
+
 
 # Menyimpan daftar RFID valid
 valid_rfid = get_valid_rfid_from_api()
