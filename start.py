@@ -47,6 +47,7 @@ def register_new_rfid(rfid):
         response = requests.get(url, timeout=10)
         response.raise_for_status()
         print(f"RFID {rfid} berhasil didaftarkan!")
+        get_valid_rfid_from_api()
     except requests.RequestException as e:
         print(f"Terjadi kesalahan saat mendaftarkan RFID: {e}")
 
@@ -122,14 +123,16 @@ def read_rfid(valid_rfid):
                     elif mode == "open_all":
                         print("RFID diterima dalam mode buka semua.")
                         disable_alarm()
-                    elif buffer in valid_rfid:
-                        print("RFID valid!")
-                        with rfid_lock:
-                            rfid_valid_used = True
-                            disable_alarm()
-                    else:
-                        print("RFID tidak valid!")
-                        trigger_gagal("RFID tidak valid.")
+                    else: 
+                        if buffer in valid_rfid:
+                            print("RFID valid!")
+                            with rfid_lock:
+                                rfid_valid_used = True
+                                disable_alarm()
+                        else:
+                            print("RFID tidak valid!")
+                            trigger_gagal("RFID tidak valid.")
+                    
                     buffer = ""
 
 
