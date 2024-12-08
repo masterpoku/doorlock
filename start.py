@@ -6,7 +6,7 @@ import requests
 
 # Konfigurasi pin GPIO
 DOOR_SWITCH_PIN = 9  # Pin sensor pembukaan pintu (magnetic door switch)
-ALARM_PIN = 17       # Pin untuk alarm
+ALARM_PIN = 18       # Pin untuk alarm
 
 # Inisialisasi sensor pintu dan alarm
 door_switch = Button(DOOR_SWITCH_PIN)
