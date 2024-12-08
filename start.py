@@ -99,7 +99,6 @@ def read_rfid(valid_rfid):
                             disable_alarm()
                         else:
                             print("RFID tidak valid!")
-                            trigger_alarm("RFID tidak valid!")
                     buffer = ""
 
 
