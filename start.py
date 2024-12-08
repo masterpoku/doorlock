@@ -78,8 +78,6 @@ def disable_alarm():
     alarm.off()
 
 
-
-# Fungsi untuk mengecek status mode registrasi
 # Fungsi untuk mengecek status mode registrasi
 def check_registration_mode():
     try:
