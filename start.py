@@ -85,7 +85,7 @@ def check_registration_mode():
         response.raise_for_status()
         data = response.json()
         if isinstance(data, list) and len(data) > 0:
-            status = data[0].get('status')
+            status = data['status']
             if status == 1:
                 print("Mode registrasi RFID baru aktif!")
                 return "register"
