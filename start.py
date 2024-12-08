@@ -108,7 +108,7 @@ def door_opened():
     global rfid_valid_used
     print("Pintu terbuka!")
     if not rfid_valid_used:
-        trigger_alarm("Pintu terbuka tanpa RFID valid!")
+        trigger_gagal("Pintu terbuka tanpa RFID valid!")
     else:
         print("Pintu dibuka dengan izin RFID valid.")
         disable_alarm()
