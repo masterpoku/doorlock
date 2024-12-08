@@ -1,20 +1,41 @@
+import RPi.GPIO as GPIO
 from evdev import InputDevice, list_devices, categorize, ecodes
-from gpiozero import Button, LED
 from signal import pause
 import threading
 import requests
+import time
 
 # Konfigurasi pin GPIO
 DOOR_SWITCH_PIN = 9  # Pin sensor pembukaan pintu (magnetic door switch)
-ALARM_PIN = 17       # Pin untuk alarm
+ALARM_PIN = 18       # Pin untuk alarm
+DOOR_PIN = 22        # Pin untuk kunci pintu
+CAMERA_PIN = 23      # Pin untuk kamera
 
-# Inisialisasi sensor pintu dan alarm
-door_switch = Button(DOOR_SWITCH_PIN)
-alarm = LED(ALARM_PIN)  # LED digunakan untuk alarm
+# Inisialisasi GPIO
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(DOOR_SWITCH_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(ALARM_PIN, GPIO.OUT)
+GPIO.setup(DOOR_PIN, GPIO.OUT)
+GPIO.setup(CAMERA_PIN, GPIO.OUT)
 
 # URL API
 API_URL = "https://18c7-182-1-97-30.ngrok-free.app/slt/api.php"
 STATUS_URL = f"{API_URL}?mode=status"
+
+# Fungsi kontrol GPIO
+def buka_pintu():
+    print("Pintu terbuka.")
+    GPIO.output(DOOR_PIN, GPIO.HIGH)
+    time.sleep(1)
+    GPIO.output(DOOR_PIN, GPIO.LOW)
+
+def trigger_alarm(reason=""):
+    print(f"ALARM AKTIF! {reason}")
+    GPIO.output(ALARM_PIN, GPIO.HIGH)
+
+def disable_alarm():
+    print("Alarm dimatikan.")
+    GPIO.output(ALARM_PIN, GPIO.LOW)
 
 # Fungsi untuk mengambil data RFID valid dari API
 def get_valid_rfid_from_api():
@@ -50,24 +71,12 @@ def check_registration_mode():
         response.raise_for_status()
         data = response.json()
         if isinstance(data, list) and len(data) > 0:
-            status = data[0].get('status', 0)
-            if status == 1:
-                print("Mode registrasi RFID baru aktif!")
-                return "register"
-            elif status == 2:
-                print("Mode buka semua RFID aktif!")
-                return "open_all"
-            elif status == 3:
-                print("Mode kunci semua RFID aktif!")
-                return "lock_all"
-            else:
-                print("Mode tidak dikenali.")
-        else:
-            print("Mode registrasi tidak aktif atau data kosong.")
-        return "inactive"
+            return data[0].get('status', 0)
+        print("Mode registrasi tidak aktif atau data kosong.")
+        return 0
     except requests.RequestException as e:
         print(f"Terjadi kesalahan saat mengecek status registrasi: {e}")
-        return "error"
+        return 0
 
 # Fungsi untuk menemukan perangkat RFID secara dinamis
 def find_rfid_device():
@@ -79,19 +88,14 @@ def find_rfid_device():
     print("RFID device not found!")
     return None
 
-# Fungsi untuk menyalakan alarm
-def trigger_alarm(reason=""):
-    print(f"ALARM AKTIF! {reason}")
-    alarm.on()
-
-# Fungsi untuk mematikan alarm
-def disable_alarm():
-    print("Alarm dimatikan.")
-    alarm.off()
-
 # Fungsi untuk membaca dan memvalidasi RFID
 def read_rfid(valid_rfid):
-    buffer = ""  # Buffer untuk menyimpan input RFID sementara
+    dev = find_rfid_device()
+    if not dev:
+        print("Tidak dapat menemukan perangkat RFID. Pastikan perangkat terhubung.")
+        return
+
+    buffer = ""
     print("Tempatkan RFID pada pembaca...")
     for event in dev.read_loop():
         if event.type == ecodes.EV_KEY and event.value == 1:
@@ -104,52 +108,37 @@ def read_rfid(valid_rfid):
                     print(f"ID RFID dibaca: {buffer}")
                     if buffer in valid_rfid:
                         print("RFID valid!")
+                        buka_pintu()
                         disable_alarm()
-                        return True, buffer
                     else:
                         print("RFID tidak valid.")
-                        mode = check_registration_mode()
-                        if mode == "register":
+                        status = check_registration_mode()
+                        if status == 1:
                             register_new_rfid(buffer)
                             valid_rfid.append(buffer)
-                        elif mode == "lock_all":
-                            print("Mengunci semua RFID. Akses ditolak.")
-                            return False, buffer
-                        elif mode == "open_all":
-                            print("Membuka semua RFID. Akses diperbolehkan.")
-                            disable_alarm()
-                            return True, buffer
+                        elif status == 3:
+                            print("Mode kunci aktif. Akses ditolak.")
                         else:
                             trigger_alarm("RFID tidak valid!")
-                    buffer = ""  # Reset buffer
-    return False, ""
+                    buffer = ""
 
 # Fungsi untuk menangani event pintu terbuka
-def door_opened(rfid_valid):
-    print("Pintu terbuka!")
-    if not rfid_valid:
-        trigger_alarm("Pintu terbuka tanpa RFID valid!")
+def door_opened():
+    print("Pintu terbuka tanpa otorisasi!")
+    trigger_alarm()
 
 # Fungsi untuk menangani event pintu tertutup
 def door_closed():
     print("Pintu tertutup.")
     disable_alarm()
 
-# Menghubungkan event door_switch dengan fungsi handler
-door_switch.when_pressed = door_closed
-door_switch.when_released = lambda: door_opened(False)
-
 # Fungsi utama
 def main():
     print("Sistem Doorlock Aktif")
     valid_rfid = get_valid_rfid_from_api()
-    global dev
-    dev = find_rfid_device()
-    if not dev:
-        print("Tidak dapat menemukan perangkat RFID. Pastikan perangkat terhubung.")
-        exit(1)
-    rfid_thread = threading.Thread(target=read_rfid, args=(valid_rfid,), daemon=True)
-    rfid_thread.start()
+    threading.Thread(target=read_rfid, args=(valid_rfid,), daemon=True).start()
+    GPIO.add_event_detect(DOOR_SWITCH_PIN, GPIO.FALLING, callback=lambda x: door_opened(), bouncetime=300)
+    GPIO.add_event_detect(DOOR_SWITCH_PIN, GPIO.RISING, callback=lambda x: door_closed(), bouncetime=300)
     pause()
 
 if __name__ == "__main__":
@@ -157,5 +146,7 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:
         print("\nSistem dihentikan.")
+        GPIO.cleanup()
     except Exception as e:
         print(f"Terjadi kesalahan: {e}")
+        GPIO.cleanup()
