@@ -12,6 +12,7 @@ ALARM_PIN = 18       # Pin untuk alarm
 # Inisialisasi sensor pintu dan alarm
 door_switch = Button(DOOR_SWITCH_PIN)
 alarm = LED(ALARM_PIN)  # LED digunakan untuk alarm
+gagal = LED(22)  # LED digunakan untuk alarm
 # URL API
 API_URL = "https://2501-2001-448a-50e0-d8cc-8def-878f-57e1-cf33.ngrok-free.app/slt/api.php"
 STATUS_URL = f"{API_URL}?mode=status"
@@ -65,7 +66,11 @@ def find_rfid_device():
 def trigger_alarm(reason=""):
     print(f"ALARM AKTIF! {reason}")
     alarm.on()
-
+def trigger_gagal(reason=""):
+    print(f"RFID SALAH")
+    gagal.on()
+    time.sleep(1)
+    gagal.off()
 
 # Fungsi untuk mematikan alarm
 def disable_alarm():
