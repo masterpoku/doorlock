@@ -89,7 +89,6 @@ def trigger_alarm(reason=""):
 def disable_alarm():
     print("Alarm dimatikan.")
     alarm.off()
-    time.sleep(10)
 
 # Fungsi untuk membaca dan memvalidasi RFID
 def read_rfid(valid_rfid):
@@ -131,7 +130,7 @@ def door_opened(rfid_valid):
     disable_alarm()
     if not rfid_valid:
         trigger_alarm("Pintu terbuka tanpa RFID valid!")
-        
+
 
 # Fungsi untuk menangani event pintu tertutup
 def door_closed():
