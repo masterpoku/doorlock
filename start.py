@@ -6,14 +6,11 @@ import requests
 
 # Konfigurasi pin GPIO
 DOOR_SWITCH_PIN = 9  # Pin sensor pembukaan pintu (magnetic door switch)
-ALARM_PIN = 18       # Pin untuk alarm
-DOOR_PIN = 22        # Pin untuk kunci pintu
-INDICATOR_PIN = 23   # Pin untuk indikator
+ALARM_PIN = 17       # Pin untuk alarm
 
 # Inisialisasi sensor pintu dan alarm
 door_switch = Button(DOOR_SWITCH_PIN)
 alarm = LED(ALARM_PIN)  # LED digunakan untuk alarm
-indicator = LED(INDICATOR_PIN)  # Indikator visual
 
 # URL API
 API_URL = "https://18c7-182-1-97-30.ngrok-free.app/slt/api.php"
@@ -94,11 +91,6 @@ def disable_alarm():
 
 # Fungsi untuk membaca dan memvalidasi RFID
 def read_rfid(valid_rfid):
-    dev = find_rfid_device()
-    if not dev:
-        print("Tidak dapat menemukan perangkat RFID. Pastikan perangkat terhubung.")
-        return
-
     buffer = ""  # Buffer untuk menyimpan input RFID sementara
     print("Tempatkan RFID pada pembaca...")
     for event in dev.read_loop():
@@ -151,6 +143,11 @@ door_switch.when_released = lambda: door_opened(False)
 def main():
     print("Sistem Doorlock Aktif")
     valid_rfid = get_valid_rfid_from_api()
+    global dev
+    dev = find_rfid_device()
+    if not dev:
+        print("Tidak dapat menemukan perangkat RFID. Pastikan perangkat terhubung.")
+        exit(1)
     rfid_thread = threading.Thread(target=read_rfid, args=(valid_rfid,), daemon=True)
     rfid_thread.start()
     pause()
