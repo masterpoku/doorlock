@@ -16,21 +16,16 @@ alarm = LED(ALARM_PIN)  # LED digunakan untuk alarm
 rfid_valid = False
 rfid_scanned = False  # Untuk mengecek apakah RFID telah discan
 
-# URL API untuk mengambil daftar RFID valid
+# URL API
 API_URL = "https://d98f-36-71-165-154.ngrok-free.app/slt/api.php"
+STATUS_URL = f"{API_URL}?mode=status"
 
 # Fungsi untuk mengambil data RFID valid dari API
 def get_valid_rfid_from_api():
     try:
-        # Kirimkan request GET ke API
         response = requests.get(API_URL)
-        
-        # Pastikan response statusnya OK (200)
         if response.status_code == 200:
-            # Parse JSON response
             data = response.json()
-            
-            # Jika data ada, ekstrak RFID dari data
             if isinstance(data, list):
                 valid_rfid = [item['rfid'] for item in data]
                 print(f"Daftar RFID valid: {valid_rfid}")
@@ -45,14 +40,29 @@ def get_valid_rfid_from_api():
         print(f"Terjadi kesalahan saat mengakses API: {e}")
         return []
 
-# Menyimpan daftar RFID valid yang diambil dari API
+# Fungsi untuk mengecek status mode registrasi
+def check_registration_mode():
+    try:
+        response = requests.get(STATUS_URL)
+        if response.status_code == 200:
+            data = response.json()
+            if 'status' in data and data['status'] == 1:
+                print("Mode registrasi RFID baru aktif!")
+                return True
+        print("Mode registrasi tidak aktif.")
+        return False
+    except Exception as e:
+        print(f"Terjadi kesalahan saat mengecek status registrasi: {e}")
+        return False
+
+# Menyimpan daftar RFID valid
 valid_rfid = get_valid_rfid_from_api()
 
 # Fungsi untuk menemukan perangkat RFID secara dinamis
 def find_rfid_device():
     devices = [InputDevice(path) for path in list_devices()]
     for device in devices:
-        if "IC Reader" in device.name or "RFID" in device.name:  # Ganti sesuai nama perangkat Anda
+        if "IC Reader" in device.name or "RFID" in device.name:
             print(f"RFID device found: {device.name} at {device.path}")
             return device
     print("RFID device not found!")
@@ -81,7 +91,7 @@ def read_rfid():
     buffer = ""  # Buffer untuk menyimpan input RFID sementara
     print("Tempatkan RFID pada pembaca...")
     for event in dev.read_loop():
-        if event.type == ecodes.EV_KEY and event.value == 1:  # Hanya event keypress
+        if event.type == ecodes.EV_KEY and event.value == 1:
             key = categorize(event).keycode
             if key.startswith("KEY_"):
                 key_char = key.replace("KEY_", "")
@@ -90,50 +100,47 @@ def read_rfid():
                     buffer += key_char
                 elif key_char == "ENTER":  # Akhiri input dengan ENTER
                     print(f"ID RFID dibaca: {buffer}")
-                    rfid_scanned = True  # Menandakan RFID telah discan
+                    rfid_scanned = True
                     if buffer in valid_rfid:
                         print("RFID valid!")
                         rfid_valid = True
-                        disable_alarm()  # Matikan alarm jika RFID valid
+                        disable_alarm()
                     else:
                         print("RFID tidak valid.")
                         rfid_valid = False
-                        trigger_alarm("RFID tidak valid.")
+                        # Periksa mode registrasi
+                        if check_registration_mode():
+                            print(f"Mode registrasi: Tambahkan RFID baru {buffer} ke sistem.")
+                        else:
+                            trigger_alarm("RFID tidak valid dan tidak dalam mode registrasi!")
                     buffer = ""  # Reset buffer
 
 # Fungsi untuk menangani event pintu terbuka
 def door_opened():
     global rfid_valid, rfid_scanned
     print("Pintu terbuka!")
-
-    # Jika RFID belum discan, alarm langsung aktif
     if not rfid_scanned:
         trigger_alarm("Pintu terbuka tanpa RFID!")
-    elif not rfid_valid:  # Jika RFID discan tetapi tidak valid
+    elif not rfid_valid:
         trigger_alarm("Pintu terbuka dengan RFID tidak valid!")
 
 # Fungsi untuk menangani event pintu tertutup
 def door_closed():
     global rfid_valid, rfid_scanned
     print("Pintu tertutup.")
-    # Reset status RFID
     rfid_valid = False
     rfid_scanned = False
     disable_alarm()
 
 # Menghubungkan event door_switch dengan fungsi handler
-door_switch.when_pressed = door_closed  # Event: Pintu tertutup
-door_switch.when_released = door_opened  # Event: Pintu terbuka
+door_switch.when_pressed = door_closed
+door_switch.when_released = door_opened
 
 # Fungsi utama
 def main():
     print("Sistem Doorlock Aktif")
-
-    # Menjalankan pembacaan RFID secara paralel
     rfid_thread = threading.Thread(target=read_rfid, daemon=True)
     rfid_thread.start()
-
-    # Stream event-driven dengan pause
     pause()
 
 if __name__ == "__main__":
