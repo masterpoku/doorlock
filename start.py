@@ -3,6 +3,7 @@ from gpiozero import Button, LED
 from signal import pause
 import threading
 import requests
+import time
 
 # Konfigurasi pin GPIO
 DOOR_SWITCH_PIN = 9  # Pin sensor pembukaan pintu (magnetic door switch)
@@ -88,6 +89,7 @@ def trigger_alarm(reason=""):
 def disable_alarm():
     print("Alarm dimatikan.")
     alarm.off()
+    time.sleep(10)
 
 # Fungsi untuk membaca dan memvalidasi RFID
 def read_rfid(valid_rfid):
@@ -104,7 +106,6 @@ def read_rfid(valid_rfid):
                     print(f"ID RFID dibaca: {buffer}")
                     if buffer in valid_rfid:
                         print("RFID valid!")
-                        disable_alarm()
                         return True, buffer
                     else:
                         print("RFID tidak valid.")
@@ -127,6 +128,7 @@ def read_rfid(valid_rfid):
 # Fungsi untuk menangani event pintu terbuka
 def door_opened(rfid_valid):
     print("Pintu terbuka!")
+    disable_alarm()
     if not rfid_valid:
         trigger_alarm("Pintu terbuka tanpa RFID valid!")
 
