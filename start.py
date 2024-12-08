@@ -13,7 +13,7 @@ door_switch = Button(DOOR_SWITCH_PIN)
 alarm = LED(ALARM_PIN)  # LED digunakan untuk alarm
 
 # URL API
-API_URL = "https://18c7-182-1-97-30.ngrok-free.app/slt/api.php"
+API_URL = "https://2501-2001-448a-50e0-d8cc-8def-878f-57e1-cf33.ngrok-free.app/slt/api.php"
 STATUS_URL = f"{API_URL}?mode=status"
 
 # Fungsi untuk mengambil data RFID valid dari API
@@ -36,7 +36,7 @@ def get_valid_rfid_from_api():
 # Fungsi untuk mendaftarkan RFID baru ke API
 def register_new_rfid(rfid):
     try:
-        url = f"https://18c7-182-1-97-30.ngrok-free.app/slt/registrasi.php?rfid={rfid}"
+        url = f"https://2501-2001-448a-50e0-d8cc-8def-878f-57e1-cf33.ngrok-free.app/slt/registrasi.php?rfid={rfid}"
         response = requests.get(url, timeout=10)
         response.raise_for_status()
         print(f"RFID {rfid} berhasil didaftarkan!")
