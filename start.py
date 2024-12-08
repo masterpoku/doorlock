@@ -8,11 +8,11 @@ import time
 # Konfigurasi pin GPIO
 DOOR_SWITCH_PIN = 9  # Pin sensor pembukaan pintu (magnetic door switch)
 ALARM_PIN = 18       # Pin untuk alarm
-
+GAGAL = 22
 # Inisialisasi sensor pintu dan alarm
 door_switch = Button(DOOR_SWITCH_PIN)
 alarm = LED(ALARM_PIN)  # LED digunakan untuk alarm
-gagal = LED(22)  # LED digunakan untuk alarm
+gagal = LED(GAGAL)  # LED digunakan untuk alarm
 # URL API
 API_URL = "https://2501-2001-448a-50e0-d8cc-8def-878f-57e1-cf33.ngrok-free.app/slt/api.php"
 STATUS_URL = f"{API_URL}?mode=status"
@@ -67,7 +67,7 @@ def trigger_alarm(reason=""):
     print(f"ALARM AKTIF! {reason}")
     alarm.on()
 def trigger_gagal(reason=""):
-    print(f"RFID SALAH")
+    print(f"RFID SALAH  {reason}")
     gagal.on()
     time.sleep(1)
     gagal.off()
