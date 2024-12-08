@@ -84,22 +84,19 @@ def check_registration_mode():
         response = requests.get(STATUS_URL, timeout=10)
         response.raise_for_status()
         data = response.json()
-        if isinstance(data, list) and len(data) > 0:
-            status = data['status']
-            if status == 1:
-                print("Mode registrasi RFID baru aktif!")
-                return "register"
-            elif status == 2:
-                print("Mode buka semua RFID aktif!")
-                return "open_all"
-            elif status == 3:
-                print("Mode kunci semua RFID aktif!")
-                return "lock_all"
-            else:
-                print("Mode tidak dikenali.")
-                return "unknown"
-        print("Mode tidak aktif atau data kosong.")
-        return "inactive"
+        status = data.get('status')
+        if status == 1:
+            print("Mode registrasi RFID baru aktif!")
+            return "register"
+        elif status == 2:
+            print("Mode buka semua RFID aktif!")
+            return "open_all"
+        elif status == 3:
+            print("Mode kunci semua RFID aktif!")
+            return "lock_all"
+        else:
+            print("Mode tidak dikenali.")
+            return "unknown"
     except requests.RequestException as e:
         print(f"Terjadi kesalahan saat mengecek status registrasi: {e}")
         return "error"
