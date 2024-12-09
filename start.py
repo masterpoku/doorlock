@@ -17,10 +17,10 @@ GPIO.setup(ALARM_PIN, GPIO.OUT)  # Alarm as output
 GPIO.setup(PINTU_PIN, GPIO.OUT)  # Pintu relay as output
 
 # URL API
-API_URL = "https://7a72-36-71-167-134.ngrok-free.app/slt/api.php"
-MODE = "https://7a72-36-71-167-134.ngrok-free.app/slt/api.php?mode"
-REGISTRASI = "https://7a72-36-71-167-134.ngrok-free.app/slt/registrasi.php?rfid={rfid}"
-LOG = "https://7a72-36-71-167-134.ngrok-free.app/slt/log.php?rfid={rfid}"
+API_URL = "https://sikapngalah.com/rfid/api.php"
+MODE = "https://sikapngalah.com/rfid/api.php?mode"
+REGISTRASI = "https://sikapngalah.com/rfid/registrasi.php?rfid={rfid}"
+LOG = "https://sikapngalah.com/rfid/log.php?rfid={rfid}"
 
 # Variabel global
 rfid_valid_used = False
