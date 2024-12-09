@@ -18,7 +18,7 @@ gagal = LED(GAGAL_PIN)
 pintu = LED(PINTU_PIN)
 
 # URL API
-API_URL = "https://2501-2001-448a-50e0-d8cc-8def-878f-57e1-cf33.ngrok-free.app/slt/api.php"
+API_URL = "https://7a72-36-71-167-134.ngrok-free.app/slt/api.php"
 
 # Variabel global
 rfid_valid_used = False
