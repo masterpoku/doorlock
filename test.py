@@ -6,7 +6,7 @@ import time
 # Set up GPIO mode to BCM (Broadcom pin numbering)
 GPIO.setmode(GPIO.BCM)
 # Set GPIO18 as output (the GPIO pin to which the relay is connected)
-relay_pin = 25
+relay_pin = 4
 GPIO.setup(relay_pin, GPIO.OUT)
 def relay_off():
     GPIO.output(relay_pin, GPIO.LOW)
