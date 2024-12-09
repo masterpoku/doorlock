@@ -67,10 +67,10 @@ def read_rfid(valid_rfid):
                         print("RFID valid!")
                         GPIO.output(PINTU_PIN, GPIO.LOW)  # Buka pintu
                         GPIO.output(ALARM_PIN, GPIO.LOW)  # Matikan alarm
-                        
+                        break
                         with rfid_lock:
                             rfid_valid_used = True
-                            break
+                            
                     else:
                         print("RFID tidak valid!")
                         GPIO.output(PINTU_PIN, GPIO.HIGH)  # Tetap tutup
