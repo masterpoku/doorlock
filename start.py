@@ -7,7 +7,7 @@ import time
 
 # Konfigurasi pin GPIO
 DOOR_SWITCH_PIN = 9
-ALARM_PIN = 18
+ALARM_PIN = 27
 GAGAL_PIN = 22
 PINTU_PIN = 23
 
