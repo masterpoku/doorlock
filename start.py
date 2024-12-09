@@ -4,6 +4,14 @@ import threading
 import requests
 import time
 import sys
+from RPLCD.i2c import CharLCD
+
+# Inisialisasi LCD
+lcd = CharLCD(i2c_expander='PCF8574', address=0x27, port=1, cols=16, rows=2, dotsize=8)
+lcd.clear()
+lcd.write_string("Sistem Siap!")
+time.sleep(2)
+lcd.clear()
 
 # Konfigurasi pin GPIO
 DOOR_SWITCH_PIN = 9
@@ -34,6 +42,7 @@ def find_rfid_device():
             print(f"RFID device found: {device.name} at {device.path}")
             return device
     print("RFID device not found!")
+    lcd.write_string("RFID Not Found!")
     return None
 
 # Fungsi untuk mengambil data RFID valid dari API
@@ -51,6 +60,7 @@ def get_valid_rfid_from_api():
             return []
     except requests.RequestException as e:
         print(f"Kesalahan saat mengakses API: {e}")
+        lcd.write_string("API Error!")
         return []
 
 # Fungsi untuk membaca dan memvalidasi RFID
@@ -58,6 +68,10 @@ def read_rfid(valid_rfid):
     global rfid_valid_used
     buffer = ""
     print("Tempatkan RFID pada pembaca...")
+    lcd.write_string("Scan RFID...")
+    time.sleep(1)
+    lcd.clear()
+    
     for event in dev.read_loop():
         if event.type == ecodes.EV_KEY and event.value == 1:
             key = categorize(event).keycode
@@ -67,8 +81,13 @@ def read_rfid(valid_rfid):
                     buffer += key_char
                 elif key_char == "ENTER":
                     print(f"ID RFID dibaca: {buffer}")
+                    lcd.clear()
+                    lcd.write_string(f"RFID: {buffer}")
+                    time.sleep(1)
                     if buffer in valid_rfid:
                         print("RFID valid!")
+                        lcd.clear()
+                        lcd.write_string('RFID Valid!')
                         GPIO.output(PINTU_PIN, GPIO.LOW)  # Buka pintu
                         GPIO.output(ALARM_PIN, GPIO.LOW)  # Matikan alarm
                         with rfid_lock:
@@ -81,9 +100,13 @@ def read_rfid(valid_rfid):
                             print(f"RFID {buffer} telah dicatat ke log.")
                         except requests.RequestException as e:
                             print(f"Kesalahan saat mencatat log RFID: {e}")
+                            lcd.write_string("Log Error!")
                         break  # Setelah valid, keluar dari loop dan berhenti
                     else:
                         print("RFID tidak valid!")
+                        lcd.clear()
+                        lcd.write_string("RFID Invalid!")
+                        time.sleep(1)
                         # Mengecek request mode dan jika status = 1, lakukan registrasi
                         try:
                             response = requests.get(MODE, timeout=10)
@@ -94,14 +117,16 @@ def read_rfid(valid_rfid):
                                 registrasi_url = REGISTRASI.format(rfid=buffer)
                                 registrasi_response = requests.get(registrasi_url, timeout=10)
                                 registrasi_response.raise_for_status()
+                                lcd.write_string("RFID Registered!")
                                 print(f"RFID {buffer} telah berhasil didaftarkan.")
-                                get_valid_rfid_from_api()
+                                valid_rfid = get_valid_rfid_from_api()
                                 break
-                            
                             else:
-                                print("Status bukan 1, tidak melakukan registrasi.")
+                                lcd.clear()
+                                lcd.write_string("No Reg Allowed")
                         except requests.RequestException as e:
                             print(f"Kesalahan saat mengakses API: {e}")
+                            lcd.write_string("API Error!")
                         GPIO.output(PINTU_PIN, GPIO.HIGH)  # Tetap tutup
                     buffer = ""
 
@@ -109,8 +134,11 @@ def read_rfid(valid_rfid):
 def door_opened():
     global rfid_valid_used
     print("Pintu terbuka!")
+    lcd.clear()
+    lcd.write_string("Pintu Terbuka!")
     if not rfid_valid_used:
         print("ALARM AKTIF: Pintu terbuka tanpa izin!")
+        lcd.write_string("ALARM!")
         GPIO.output(ALARM_PIN, GPIO.HIGH)  # Nyalakan alarm
     else:
         print("Pintu dibuka dengan izin RFID valid.")
@@ -120,12 +148,17 @@ def door_opened():
 # Fungsi untuk menangani event pintu tertutup
 def door_closed():
     print("Pintu tertutup.")
+    lcd.clear()
+    lcd.write_string("Pintu Tertutup")
     GPIO.output(PINTU_PIN, GPIO.LOW)  # Tutup pintu
     GPIO.output(ALARM_PIN, GPIO.LOW)  # Matikan alarm
 
 # Fungsi utama
 def main():
     print("Sistem Doorlock Aktif")
+    lcd.write_string("Sistem Aktif")
+    time.sleep(2)
+    lcd.clear()
     valid_rfid = get_valid_rfid_from_api()
     global dev
     dev = find_rfid_device()
