@@ -8,7 +8,7 @@ import time
 # Konfigurasi pin GPIO
 DOOR_SWITCH_PIN = 9
 ALARM_PIN = 27
-PINTU_PIN = 23
+PINTU_PIN = 25
 
 # Inisialisasi sensor pintu dan alarm
 door_switch = Button(DOOR_SWITCH_PIN)
