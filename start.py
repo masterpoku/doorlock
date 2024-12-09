@@ -1,6 +1,5 @@
+import RPi.GPIO as GPIO
 from evdev import InputDevice, list_devices, categorize, ecodes
-from gpiozero import Button, LED
-from signal import pause
 import threading
 import requests
 import time
@@ -10,10 +9,11 @@ DOOR_SWITCH_PIN = 9
 ALARM_PIN = 27
 PINTU_PIN = 25
 
-# Inisialisasi sensor pintu dan alarm
-door_switch = Button(DOOR_SWITCH_PIN)
-alarm = LED(ALARM_PIN)
-pintu = LED(PINTU_PIN)
+# Inisialisasi GPIO
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(DOOR_SWITCH_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Door switch as input with pull-up
+GPIO.setup(ALARM_PIN, GPIO.OUT)  # Alarm as output
+GPIO.setup(PINTU_PIN, GPIO.OUT)  # Pintu relay as output
 
 # URL API
 API_URL = "https://7a72-36-71-167-134.ngrok-free.app/slt/api.php"
@@ -65,13 +65,13 @@ def read_rfid(valid_rfid):
                     print(f"ID RFID dibaca: {buffer}")
                     if buffer in valid_rfid:
                         print("RFID valid!")
-                        pintu.off()
-                        alarm.off()
+                        GPIO.output(PINTU_PIN, GPIO.LOW)  # Buka pintu
+                        GPIO.output(ALARM_PIN, GPIO.LOW)  # Matikan alarm
                         with rfid_lock:
                             rfid_valid_used = True
                     else:
                         print("RFID tidak valid!")
-                        pintu.on()
+                        GPIO.output(PINTU_PIN, GPIO.HIGH)  # Tetap tutup
                     buffer = ""
 
 # Fungsi untuk menangani event pintu terbuka
@@ -79,23 +79,18 @@ def door_opened():
     global rfid_valid_used
     print("Pintu terbuka!")
     if not rfid_valid_used:
-        alarm.on()
         print("ALARM AKTIF: Pintu terbuka tanpa izin!")
-        alarm.on()
+        GPIO.output(ALARM_PIN, GPIO.HIGH)  # Nyalakan alarm
     else:
         print("Pintu dibuka dengan izin RFID valid.")
-        alarm.off()
+        GPIO.output(ALARM_PIN, GPIO.LOW)  # Matikan alarm
         rfid_valid_used = False
 
 # Fungsi untuk menangani event pintu tertutup
 def door_closed():
     print("Pintu tertutup.")
-    pintu.off()
-    alarm.off()
-
-# Menghubungkan event door_switch dengan fungsi handler
-door_switch.when_pressed = door_closed
-door_switch.when_released = door_opened
+    GPIO.output(PINTU_PIN, GPIO.LOW)  # Tutup pintu
+    GPIO.output(ALARM_PIN, GPIO.LOW)  # Matikan alarm
 
 # Fungsi utama
 def main():
@@ -106,14 +101,35 @@ def main():
     if not dev:
         print("Tidak dapat menemukan perangkat RFID. Pastikan perangkat terhubung.")
         exit(1)
+
+    # Monitor pintu menggunakan thread
+    def door_monitor():
+        previous_state = GPIO.input(DOOR_SWITCH_PIN)
+        while True:
+            current_state = GPIO.input(DOOR_SWITCH_PIN)
+            if current_state != previous_state:
+                if current_state == GPIO.HIGH:
+                    door_opened()
+                else:
+                    door_closed()
+                previous_state = current_state
+            time.sleep(0.1)
+
+    threading.Thread(target=door_monitor, daemon=True).start()
+
+    # RFID reading
     rfid_thread = threading.Thread(target=read_rfid, args=(valid_rfid,), daemon=True)
     rfid_thread.start()
-    pause()
 
-if __name__ == "__main__":
     try:
-        main()
+        while True:
+            time.sleep(1)
     except KeyboardInterrupt:
         print("\nSistem dihentikan.")
+        GPIO.cleanup()
     except Exception as e:
         print(f"Terjadi kesalahan: {e}")
+        GPIO.cleanup()
+
+if __name__ == "__main__":
+    main()
