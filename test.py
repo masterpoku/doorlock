@@ -37,7 +37,7 @@ def read_rfid():
 
     buffer = ""
     print("Tempatkan RFID pada pembaca...")
-    relay_off()
+    relay_on()
     for event in dev.read_loop():
         if event.type == ecodes.EV_KEY and event.value == 1:
             key = categorize(event).keycode
@@ -49,11 +49,6 @@ def read_rfid():
                     print(f"ID RFID dibaca: {buffer}")
                     if buffer in VALID_RFID:
 
-                        # Turn relay on for 5 seconds
-                        relay_on()
-                        time.sleep(1)
-
-                        # Turn relay off
                         relay_off()
 
                         print("RFID valid! Pintu terbuka.")
