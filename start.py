@@ -8,13 +8,11 @@ import time
 # Konfigurasi pin GPIO
 DOOR_SWITCH_PIN = 9
 ALARM_PIN = 27
-GAGAL_PIN = 22
 PINTU_PIN = 23
 
 # Inisialisasi sensor pintu dan alarm
 door_switch = Button(DOOR_SWITCH_PIN)
 alarm = LED(ALARM_PIN)
-gagal = LED(GAGAL_PIN)
 pintu = LED(PINTU_PIN)
 
 # URL API
@@ -67,16 +65,13 @@ def read_rfid(valid_rfid):
                     print(f"ID RFID dibaca: {buffer}")
                     if buffer in valid_rfid:
                         print("RFID valid!")
+                        pintu.off()
+                        alarm.off()
                         with rfid_lock:
                             rfid_valid_used = True
-                            pintu.off()
-                            alarm.off()
                     else:
                         print("RFID tidak valid!")
                         pintu.on()
-                        gagal.on()
-                        time.sleep(1)
-                        gagal.off()
                     buffer = ""
 
 # Fungsi untuk menangani event pintu terbuka
