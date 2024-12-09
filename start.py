@@ -89,7 +89,7 @@ def read_rfid(valid_rfid):
                             response = requests.get(MODE, timeout=10)
                             response.raise_for_status()
                             mode_data = response.json()
-                            if isinstance(mode_data, dict) and mode_data.get('status') == 1:
+                            if isinstance(mode_data, list) and any(entry.get('status') == 1 for entry in mode_data):
                                 # Jika status = 1, lakukan registrasi RFID
                                 registrasi_url = REGISTRASI.format(rfid=buffer)
                                 registrasi_response = requests.get(registrasi_url, timeout=10)
