@@ -6,8 +6,8 @@ import time
 
 # Konfigurasi pin GPIO
 DOOR_SWITCH_PIN = 9
-ALARM_PIN = 27
-PINTU_PIN = 25
+ALARM_PIN = 4
+PINTU_PIN = 27
 
 # Inisialisasi GPIO
 GPIO.setmode(GPIO.BCM)
