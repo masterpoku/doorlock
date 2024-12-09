@@ -86,6 +86,7 @@ def door_opened():
     if not rfid_valid_used:
         alarm.on()
         print("ALARM AKTIF: Pintu terbuka tanpa izin!")
+        alarm.on()
     else:
         print("Pintu dibuka dengan izin RFID valid.")
         alarm.off()
