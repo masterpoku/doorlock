@@ -41,22 +41,24 @@ def read_rfid():
     buffer = ""
     print("Tempatkan RFID pada pembaca...")
     relay_on()  # Nyalakan relay saat mulai
-    for event in dev.read_loop():
-        if event.type == ecodes.EV_KEY and event.value == 1:
-            key = categorize(event).keycode
-            if key.startswith("KEY_"):
-                key_char = key.replace("KEY_", "")
-                if key_char.isdigit():
-                    buffer += key_char
-                elif key_char == "ENTER":
-                    print(f"ID RFID dibaca: {buffer}")
-                    if buffer in VALID_RFID:
-                        relay_off()  # Matikan relay jika RFID valid
-                        print("RFID valid! Pintu terbuka.")
-                       
-                    else:
-                        print("RFID tidak valid! Akses ditolak.")
-                    buffer = ""  # Reset buffer setelah membaca
+    while True:  # Loop terus menerus untuk membaca RFID
+        for event in dev.read_loop():
+            if event.type == ecodes.EV_KEY and event.value == 1:
+                key = categorize(event).keycode
+                if key.startswith("KEY_"):
+                    key_char = key.replace("KEY_", "")
+                    if key_char.isdigit():
+                        buffer += key_char
+                    elif key_char == "ENTER":
+                        print(f"ID RFID dibaca: {buffer}")
+                        if buffer in VALID_RFID:
+                            relay_off()  # Matikan relay jika RFID valid
+                            print("RFID valid! Pintu terbuka.")
+                            time.sleep(5)  # Waktu relay tetap mati sebelum kembali menyala
+                            relay_on()  # Nyalakan kembali relay
+                        else:
+                            print("RFID tidak valid! Akses ditolak.")
+                        buffer = ""  # Reset buffer setelah membaca
 
 if __name__ == "__main__":
     try:
