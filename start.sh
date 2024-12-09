@@ -7,5 +7,5 @@ while true; do
 
     # Jika script Python berhenti atau ada error, program akan tidur selama 1 detik sebelum mencoba lagi
     echo "Script Python berhenti. Menunggu 1 detik sebelum mencoba lagi..."
-    sleep 1
+    sleep 5
 done
