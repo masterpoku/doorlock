@@ -6,24 +6,33 @@ import requests
 import time
 
 # Konfigurasi pin GPIO
-DOOR_SWITCH_PIN = 9  # Pin sensor pembukaan pintu (magnetic door switch)
-ALARM_PIN = 18       # Pin untuk alarm
-GAGAL_PIN = 22       # Pin untuk indikasi RFID salah
-PINTU_PIN = 23       # Pin untuk relay pintu
+DOOR_SWITCH_PIN = 9
+ALARM_PIN = 18
+GAGAL_PIN = 22
+PINTU_PIN = 23
 
 # Inisialisasi sensor pintu dan alarm
 door_switch = Button(DOOR_SWITCH_PIN)
 alarm = LED(ALARM_PIN)
 gagal = LED(GAGAL_PIN)
-pintu = LED(PINTU_PIN)  # Pintu dikontrol dengan relay
+pintu = LED(PINTU_PIN)
 
 # URL API
-API_URL = "https://7a72-36-71-167-134.ngrok-free.app/slt/api.php"
-STATUS_URL = f"{API_URL}?mode=status"
+API_URL = "https://2501-2001-448a-50e0-d8cc-8def-878f-57e1-cf33.ngrok-free.app/slt/api.php"
 
 # Variabel global
 rfid_valid_used = False
 rfid_lock = threading.Lock()
+
+# Fungsi untuk menemukan perangkat RFID secara dinamis
+def find_rfid_device():
+    devices = [InputDevice(path) for path in list_devices()]
+    for device in devices:
+        if "IC Reader" in device.name or "RFID" in device.name:
+            print(f"RFID device found: {device.name} at {device.path}")
+            return device
+    print("RFID device not found!")
+    return None
 
 # Fungsi untuk mengambil data RFID valid dari API
 def get_valid_rfid_from_api():
@@ -41,23 +50,6 @@ def get_valid_rfid_from_api():
     except requests.RequestException as e:
         print(f"Kesalahan saat mengakses API: {e}")
         return []
-
-# Fungsi untuk menyalakan alarm
-def trigger_alarm(reason=""):
-    print(f"ALARM AKTIF! {reason}")
-    alarm.on()
-
-# Fungsi untuk mematikan alarm
-def disable_alarm():
-    print("Alarm dimatikan.")
-    alarm.off()
-
-# Fungsi untuk memicu indikasi RFID salah
-def trigger_gagal(reason=""):
-    print(f"RFID SALAH: {reason}")
-    gagal.on()
-    time.sleep(1)
-    gagal.off()
 
 # Fungsi untuk membaca dan memvalidasi RFID
 def read_rfid(valid_rfid):
@@ -78,11 +70,13 @@ def read_rfid(valid_rfid):
                         with rfid_lock:
                             rfid_valid_used = True
                             pintu.off()
-                            disable_alarm()
+                            alarm.off()
                     else:
                         print("RFID tidak valid!")
                         pintu.on()
-                        trigger_gagal("RFID tidak valid.")
+                        gagal.on()
+                        time.sleep(1)
+                        gagal.off()
                     buffer = ""
 
 # Fungsi untuk menangani event pintu terbuka
@@ -90,17 +84,18 @@ def door_opened():
     global rfid_valid_used
     print("Pintu terbuka!")
     if not rfid_valid_used:
-        trigger_alarm("Pintu terbuka tanpa izin!")
+        alarm.on()
+        print("ALARM AKTIF: Pintu terbuka tanpa izin!")
     else:
         print("Pintu dibuka dengan izin RFID valid.")
-        disable_alarm()
-        rfid_valid_used = False  # Reset izin setelah pintu terbuka
+        alarm.off()
+        rfid_valid_used = False
 
 # Fungsi untuk menangani event pintu tertutup
 def door_closed():
     print("Pintu tertutup.")
     pintu.off()
-    disable_alarm()
+    alarm.off()
 
 # Menghubungkan event door_switch dengan fungsi handler
 door_switch.when_pressed = door_closed
