@@ -25,6 +25,7 @@ def get_last_image(folder):
     except Exception as e:
         print(f"Error retrieving the last image: {e}")
         return None
+    
 
 def upload_image(image_path):
     try:

@@ -9,3 +9,4 @@ while true; do
     echo "Script Python berhenti. Menunggu 1 detik sebelum mencoba lagi..."
     sleep 5
 done
+

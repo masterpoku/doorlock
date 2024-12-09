@@ -97,6 +97,7 @@ def read_rfid(valid_rfid):
                                 print(f"RFID {buffer} telah berhasil didaftarkan.")
                                 get_valid_rfid_from_api()
                                 break
+                            
                             else:
                                 print("Status bukan 1, tidak melakukan registrasi.")
                         except requests.RequestException as e:
