@@ -18,6 +18,9 @@ GPIO.setup(PINTU_PIN, GPIO.OUT)  # Pintu relay as output
 
 # URL API
 API_URL = "https://7a72-36-71-167-134.ngrok-free.app/slt/api.php"
+MODE = "https://7a72-36-71-167-134.ngrok-free.app/slt/api.php?mode"
+REGISTRASI = "https://7a72-36-71-167-134.ngrok-free.app/slt/registrasi.php?rfid={rfid}"
+LOG = "https://7a72-36-71-167-134.ngrok-free.app/slt/log.php?rfid={rfid}"
 
 # Variabel global
 rfid_valid_used = False
@@ -70,9 +73,32 @@ def read_rfid(valid_rfid):
                         GPIO.output(ALARM_PIN, GPIO.LOW)  # Matikan alarm
                         with rfid_lock:
                             rfid_valid_used = True
+                        # Log RFID ke API
+                        try:
+                            log_url = LOG.format(rfid=buffer)
+                            response = requests.get(log_url, timeout=10)
+                            response.raise_for_status()
+                            print(f"RFID {buffer} telah dicatat ke log.")
+                        except requests.RequestException as e:
+                            print(f"Kesalahan saat mencatat log RFID: {e}")
                         break  # Setelah valid, keluar dari loop dan berhenti
                     else:
                         print("RFID tidak valid!")
+                        # Mengecek request mode dan jika status = 1, lakukan registrasi
+                        try:
+                            response = requests.get(MODE, timeout=10)
+                            response.raise_for_status()
+                            mode_data = response.json()
+                            if isinstance(mode_data, dict) and mode_data.get('status') == 1:
+                                # Jika status = 1, lakukan registrasi RFID
+                                registrasi_url = REGISTRASI.format(rfid=buffer)
+                                registrasi_response = requests.get(registrasi_url, timeout=10)
+                                registrasi_response.raise_for_status()
+                                print(f"RFID {buffer} telah berhasil didaftarkan.")
+                            else:
+                                print("Status bukan 1, tidak melakukan registrasi.")
+                        except requests.RequestException as e:
+                            print(f"Kesalahan saat mengakses API: {e}")
                         GPIO.output(PINTU_PIN, GPIO.HIGH)  # Tetap tutup
                     buffer = ""
 
