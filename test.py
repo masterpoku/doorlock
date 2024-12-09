@@ -2,15 +2,18 @@ from evdev import InputDevice, list_devices, categorize, ecodes
 import RPi.GPIO as GPIO
 import time
 
-
 # Set up GPIO mode to BCM (Broadcom pin numbering)
 GPIO.setmode(GPIO.BCM)
-# Set GPIO18 as output (the GPIO pin to which the relay is connected)
+
+# Set GPIO4 as output (the GPIO pin to which the relay is connected)
 relay_pin = 4
 GPIO.setup(relay_pin, GPIO.OUT)
+
+# Fungsi untuk mematikan dan menyalakan relay
 def relay_off():
     GPIO.output(relay_pin, GPIO.LOW)
     print("Relay is OFF")
+
 def relay_on():
     GPIO.output(relay_pin, GPIO.HIGH)
     print("Relay is ON")
@@ -37,7 +40,7 @@ def read_rfid():
 
     buffer = ""
     print("Tempatkan RFID pada pembaca...")
-    relay_on()
+    relay_on()  # Nyalakan relay saat mulai
     for event in dev.read_loop():
         if event.type == ecodes.EV_KEY and event.value == 1:
             key = categorize(event).keycode
@@ -48,10 +51,9 @@ def read_rfid():
                 elif key_char == "ENTER":
                     print(f"ID RFID dibaca: {buffer}")
                     if buffer in VALID_RFID:
-
-                        relay_off()
-
+                        relay_off()  # Matikan relay jika RFID valid
                         print("RFID valid! Pintu terbuka.")
+                        break  # Keluar dari loop setelah RFID valid
                     else:
                         print("RFID tidak valid! Akses ditolak.")
                     buffer = ""  # Reset buffer setelah membaca
@@ -61,3 +63,5 @@ if __name__ == "__main__":
         read_rfid()
     except KeyboardInterrupt:
         print("\nSistem dihentikan.")
+    finally:
+        GPIO.cleanup()  # Pastikan GPIO di-reset saat program selesai
