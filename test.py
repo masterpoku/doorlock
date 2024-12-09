@@ -53,7 +53,7 @@ def read_rfid():
                     if buffer in VALID_RFID:
                         relay_off()  # Matikan relay jika RFID valid
                         print("RFID valid! Pintu terbuka.")
-                        break  # Keluar dari loop setelah RFID valid
+                       
                     else:
                         print("RFID tidak valid! Akses ditolak.")
                     buffer = ""  # Reset buffer setelah membaca
