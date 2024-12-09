@@ -3,6 +3,7 @@ from evdev import InputDevice, list_devices, categorize, ecodes
 import threading
 import requests
 import time
+import sys
 
 # Konfigurasi pin GPIO
 DOOR_SWITCH_PIN = 9
@@ -67,10 +68,9 @@ def read_rfid(valid_rfid):
                         print("RFID valid!")
                         GPIO.output(PINTU_PIN, GPIO.LOW)  # Buka pintu
                         GPIO.output(ALARM_PIN, GPIO.LOW)  # Matikan alarm
-                        break
                         with rfid_lock:
                             rfid_valid_used = True
-                            
+                        break  # Setelah valid, keluar dari loop dan berhenti
                     else:
                         print("RFID tidak valid!")
                         GPIO.output(PINTU_PIN, GPIO.HIGH)  # Tetap tutup
@@ -126,6 +126,10 @@ def main():
     try:
         while True:
             time.sleep(1)
+            if rfid_valid_used:
+                print("RFID valid. Program selesai.")
+                GPIO.cleanup()  # Bersihkan GPIO dan keluar dari program
+                sys.exit(0)  # Keluar dari program
     except KeyboardInterrupt:
         print("\nSistem dihentikan.")
         GPIO.cleanup()
