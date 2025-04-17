@@ -9,6 +9,12 @@ import cv2
 import os
 from datetime import datetime
 
+# Folder containing images
+IMAGE_FOLDER = "image"
+
+# API endpoint for uploading images
+UPLOAD_URL = "https://sikapngalah.com/rfid/upload.php"
+
 # Inisialisasi LCD
 lcd = CharLCD(i2c_expander='PCF8574', address=0x27, port=1, cols=16, rows=2, dotsize=8)
 lcd.clear()
