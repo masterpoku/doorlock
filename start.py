@@ -5,7 +5,19 @@ import requests
 import time
 import sys
 from RPLCD.i2c import CharLCD
+import cv2
+import os
+from datetime import datetime
 
+# Buat folder image kalau belum ada
+os.makedirs("image", exist_ok=True)
+
+# Ambil waktu sekarang
+filename = datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".jpg"
+filepath = os.path.join("image", filename)
+
+# Buka kamera (0 biasanya /dev/video0)
+cap = cv2.VideoCapture(0)
 # Inisialisasi LCD
 lcd = CharLCD(i2c_expander='PCF8574', address=0x27, port=1, cols=16, rows=2, dotsize=8)
 lcd.clear()
@@ -44,7 +56,23 @@ def find_rfid_device():
     print("RFID device not found!")
     lcd.write_string("RFID Not Found!")
     return None
+def capture_image():
+    now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    filename = f"image/{now}.jpg"
+    cap = cv2.VideoCapture(0)
 
+    if not cap.isOpened():
+        print("Gagal membuka kamera.")
+        return
+
+    ret, frame = cap.read()
+    if ret:
+        cv2.imwrite(filename, frame)
+        print(f"Gambar disimpan di: {filename}")
+    else:
+        print("Gagal mengambil gambar.")
+
+    cap.release()
 # Fungsi untuk mengambil data RFID valid dari API
 def get_valid_rfid_from_api():
     try:
@@ -54,6 +82,7 @@ def get_valid_rfid_from_api():
         if isinstance(data, list):
             valid_rfid = [item['rfid'] for item in data]
             print(f"Daftar RFID valid: {valid_rfid}")
+            capture_image()
             return valid_rfid
         else:
             print("Data RFID kosong atau tidak valid.")
@@ -106,6 +135,7 @@ def read_rfid(valid_rfid):
                         print("RFID tidak valid!")
                         lcd.clear()
                         lcd.write_string("RFID Invalid!")
+                        capture_image()
                         time.sleep(1)
                         # Mengecek request mode dan jika status = 1, lakukan registrasi
                         try:
@@ -130,19 +160,26 @@ def read_rfid(valid_rfid):
                         GPIO.output(PINTU_PIN, GPIO.HIGH)  # Tetap tutup
                     buffer = ""
 
+
+
+
+
 # Fungsi untuk menangani event pintu terbuka
 def door_opened():
     global rfid_valid_used
     print("Pintu terbuka!")
     lcd.clear()
     lcd.write_string("Pintu Terbuka!")
+
     if not rfid_valid_used:
         print("ALARM AKTIF: Pintu terbuka tanpa izin!")
         lcd.write_string("ALARM!")
-        GPIO.output(ALARM_PIN, GPIO.HIGH)  # Nyalakan alarm
+        GPIO.output(ALARM_PIN, GPIO.HIGH)
+        capture_image()
     else:
         print("Pintu dibuka dengan izin RFID valid.")
-        GPIO.output(ALARM_PIN, GPIO.LOW)  # Matikan alarm
+        GPIO.output(ALARM_PIN, GPIO.LOW)
+        capture_image()
         rfid_valid_used = False
 
 # Fungsi untuk menangani event pintu tertutup
