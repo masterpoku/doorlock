@@ -93,6 +93,7 @@ def read_rfid(valid_rfid):
                         lcd.write_string('RFID Valid!')
                         GPIO.output(PINTU_PIN, GPIO.LOW)  # Buka pintu
                         GPIO.output(ALARM_PIN, GPIO.LOW)  # Matikan alarm
+                        capture_image()
                         with rfid_lock:
                             rfid_valid_used = True
                         # Log RFID ke API
@@ -109,6 +110,7 @@ def read_rfid(valid_rfid):
                         print("RFID tidak valid!")
                         lcd.clear()
                         lcd.write_string("RFID Invalid!")
+                        capture_image()
                         time.sleep(1)
                         # Mengecek request mode dan jika status = 1, lakukan registrasi
                         try:
