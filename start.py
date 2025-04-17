@@ -93,7 +93,7 @@ def read_rfid(valid_rfid):
                         lcd.write_string('RFID Valid!')
                         GPIO.output(PINTU_PIN, GPIO.LOW)  # Buka pintu
                         GPIO.output(ALARM_PIN, GPIO.LOW)  # Matikan alarm
-                        capture_image()
+                        capture_image(buffer)
                         with rfid_lock:
                             rfid_valid_used = True
                         # Log RFID ke API
@@ -110,7 +110,7 @@ def read_rfid(valid_rfid):
                         print("RFID tidak valid!")
                         lcd.clear()
                         lcd.write_string("RFID Invalid!")
-                        capture_image()
+                        capture_image(buffer)
                         time.sleep(1)
                         # Mengecek request mode dan jika status = 1, lakukan registrasi
                         try:
@@ -135,25 +135,37 @@ def read_rfid(valid_rfid):
                         GPIO.output(PINTU_PIN, GPIO.HIGH)  # Tetap tutup
                     buffer = ""
 
-def capture_image():
-    now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    filename = f"image/{now}.jpg"
+def capture_image(nama):
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M")
+    filename = f"{nama}_{timestamp}.jpg"
+    filepath = os.path.join(IMAGE_FOLDER, filename)
 
     cap = cv2.VideoCapture(0)
-    time.sleep(0.3)  # kasih waktu kamera nyala
-
     if not cap.isOpened():
-        print("Gagal membuka kamera.")
+        print("❌ Gagal buka kamera.")
         return
 
     ret, frame = cap.read()
-    if ret:
-        cv2.imwrite(filename, frame)
-        print(f"Gambar disimpan di: {filename}")
-    else:
-        print("Gagal mengambil gambar.")
-
     cap.release()
+
+    if not ret:
+        print("❌ Gagal ambil gambar.")
+        return
+
+    cv2.imwrite(filepath, frame)
+    print(f"📸 Gambar disimpan sebagai: {filepath}")
+
+    # Langsung upload
+    try:
+        with open(filepath, 'rb') as file:
+            files = {'file': file}
+            response = requests.post(UPLOAD_URL, files=files)
+            if response.status_code == 200:
+                print(f"✅ Upload sukses: {response.json()}")
+            else:
+                print(f"❌ Gagal upload. Status: {response.status_code}")
+    except Exception as e:
+        print(f"❌ Error saat upload: {e}")
 
 def door_opened():
     global rfid_valid_used
@@ -165,11 +177,11 @@ def door_opened():
         print("ALARM AKTIF: Pintu terbuka tanpa izin!")
         lcd.write_string("ALARM!")
         GPIO.output(ALARM_PIN, GPIO.HIGH)
-        capture_image()
+        capture_image("alm_aktif")
     else:
         print("Pintu dibuka dengan izin RFID valid.")
         GPIO.output(ALARM_PIN, GPIO.LOW)
-        capture_image()
+        capture_image("rfid_valid")
         rfid_valid_used = False
 
 # Fungsi untuk menangani event pintu tertutup

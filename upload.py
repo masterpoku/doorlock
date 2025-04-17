@@ -5,7 +5,7 @@ import requests
 IMAGE_FOLDER = "image"
 
 # API endpoint for uploading images
-UPLOAD_URL = "http://localhost/slt/upload.php"
+UPLOAD_URL = "https://sikapngalah.com/rfid/upload.php"
 
 def get_last_image(folder):
     try:
