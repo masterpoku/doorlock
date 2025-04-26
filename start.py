@@ -209,6 +209,7 @@ def main():
     lcd.write_string("Sistem Aktif")
     valid_rfid = get_valid_rfid_from_api()
     global dev
+    lcd.clear()
     dev = find_rfid_device()
     if not dev:
         print("Tidak dapat menemukan perangkat RFID. Pastikan perangkat terhubung.")
