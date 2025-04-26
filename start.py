@@ -118,6 +118,16 @@ def read_rfid(valid_rfid):
                         lcd.write_string("RFID Invalid!")
                         capture_image(buffer)
                         time.sleep(1)
+                        # Log RFID ke API
+                        try:
+                            log_url = LOG.format(rfid=buffer)
+                            response = requests.get(log_url, timeout=10)
+                            response.raise_for_status()
+                            print(f"RFID {buffer} telah dicatat ke log.")
+                        except requests.RequestException as e:
+                            print(f"Kesalahan saat mencatat log RFID: {e}")
+                            lcd.write_string("Log Error!")
+                        break  # Setelah valid, keluar dari loop dan berhenti
                         # Mengecek request mode dan jika status = 1, lakukan registrasi
                         try:
                             response = requests.get(MODE, timeout=10)
@@ -160,7 +170,16 @@ def capture_image(nama):
 
     cv2.imwrite(filepath, frame)
     print(f"📸 Gambar disimpan sebagai: {filepath}")
-
+# Log RFID ke API
+    try:
+        log_url = LOG.format(rfid={nama}_{timestamp})
+        response = requests.get(log_url, timeout=10)
+        response.raise_for_status()
+        print(f"RFID {buffer} telah dicatat ke log.")
+    except requests.RequestException as e:
+        print(f"Kesalahan saat mencatat log RFID: {e}")
+        lcd.write_string("Log Error!")
+    break  # Setelah valid, keluar dari loop dan berhenti
     # Langsung upload
     try:
         with open(filepath, 'rb') as file:
