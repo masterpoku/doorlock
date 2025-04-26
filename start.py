@@ -102,16 +102,6 @@ def read_rfid(valid_rfid):
                         capture_image(buffer)
                         with rfid_lock:
                             rfid_valid_used = True
-                        # Log RFID ke API
-                        try:
-                            log_url = LOG.format(rfid=buffer)
-                            response = requests.get(log_url, timeout=10)
-                            response.raise_for_status()
-                            print(f"RFID {buffer} telah dicatat ke log.")
-                        except requests.RequestException as e:
-                            print(f"Kesalahan saat mencatat log RFID: {e}")
-                            lcd.write_string("Log Error!")
-                        break  # Setelah valid, keluar dari loop dan berhenti
                     else:
                         print("RFID tidak valid!")
                         lcd.clear()
@@ -161,11 +151,20 @@ def capture_image(nama):
     cv2.imwrite(filepath, frame)
     print(f"📸 Gambar disimpan sebagai: {filepath}")
 
-    # Langsung upload
+    # ⏩ Langsung log ke API juga
+    try:
+        log_url = LOG.format(rfid=nama)
+        response = requests.get(log_url, timeout=10)
+        response.raise_for_status()
+        print(f"✅ Nama {nama} telah dicatat ke log.")
+    except requests.RequestException as e:
+        print(f"❌ Kesalahan saat mencatat log nama: {e}")
+
+    # ⏩ Langsung upload ke server
     try:
         with open(filepath, 'rb') as file:
             files = {'file': file}
-            response = requests.post(UPLOAD_URL, files=files)
+            response = requests.post(UPLOAD_URL, files=files, timeout=20)
             if response.status_code == 200:
                 print(f"✅ Upload sukses: {response.json()}")
             else:
