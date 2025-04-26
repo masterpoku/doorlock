@@ -200,9 +200,9 @@ def door_closed():
 
 # Fungsi utama
 def main():
+    door_closed()
     print("Sistem Doorlock Aktif")
     lcd.write_string("Sistem Aktif")
-    door_closed()
     time.sleep(2)
     lcd.clear()
     valid_rfid = get_valid_rfid_from_api()
