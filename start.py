@@ -102,16 +102,6 @@ def read_rfid(valid_rfid):
                         capture_image(buffer)
                         with rfid_lock:
                             rfid_valid_used = True
-                        # Log RFID ke API
-                        try:
-                            log_url = LOG.format(rfid=buffer)
-                            response = requests.get(log_url, timeout=10)
-                            response.raise_for_status()
-                            print(f"RFID {buffer} telah dicatat ke log.")
-                        except requests.RequestException as e:
-                            print(f"Kesalahan saat mencatat log RFID: {e}")
-                            lcd.write_string("Log Error!")
-                        break  # Setelah valid, keluar dari loop dan berhenti
                     else:
                         print("RFID tidak valid!")
                         lcd.clear()
@@ -146,6 +136,7 @@ def capture_image(nama):
     filename = f"{nama}_{timestamp}.jpg"
     filepath = os.path.join(IMAGE_FOLDER, filename)
 
+    # Buka kamera
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
         print("❌ Gagal buka kamera.")
@@ -158,21 +149,34 @@ def capture_image(nama):
         print("❌ Gagal ambil gambar.")
         return
 
-    cv2.imwrite(filepath, frame)
-    print(f"📸 Gambar disimpan sebagai: {filepath}")
+    # Simpan gambar
+    try:
+        cv2.imwrite(filepath, frame)
+        print(f"📸 Gambar disimpan sebagai: {filepath}")
+    except Exception as e:
+        print(f"❌ Error saat menyimpan gambar: {e}")
+        return
 
-    # Langsung upload
+    # Log nama ke API
+    try:
+        log_url = LOG_URL.format(rfid=nama)
+        response = requests.get(log_url, timeout=10)
+        response.raise_for_status()
+        print(f"✅ Nama {nama} telah dicatat ke log.")
+    except requests.RequestException as e:
+        print(f"❌ Kesalahan saat mencatat log nama: {e}")
+
+    # Upload gambar ke server
     try:
         with open(filepath, 'rb') as file:
             files = {'file': file}
-            response = requests.post(UPLOAD_URL, files=files)
+            response = requests.post(UPLOAD_URL, files=files, timeout=20)
             if response.status_code == 200:
                 print(f"✅ Upload sukses: {response.json()}")
             else:
                 print(f"❌ Gagal upload. Status: {response.status_code}")
     except Exception as e:
         print(f"❌ Error saat upload: {e}")
-
 def door_opened():
     global rfid_valid_used
     print("Pintu terbuka!")
