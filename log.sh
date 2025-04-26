@@ -1,0 +1,1 @@
+journalctl -u doorlock.service -f
