@@ -159,7 +159,7 @@ def capture_image(nama):
 
     # Log nama ke API
     try:
-        log_url = LOG_URL.format(rfid=nama)
+        log_url = LOG.format(rfid=nama)
         response = requests.get(log_url, timeout=10)
         response.raise_for_status()
         print(f"✅ Nama {nama} telah dicatat ke log.")
