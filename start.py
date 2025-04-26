@@ -223,6 +223,7 @@ def main():
     print("Sistem Doorlock Aktif")
     lcd.write_string("Sistem Aktif")
     valid_rfid = get_valid_rfid_from_api()
+    lcd.clear()
     global dev
     dev = find_rfid_device()
     if not dev:
