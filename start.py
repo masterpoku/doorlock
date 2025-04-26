@@ -102,6 +102,7 @@ def read_rfid(valid_rfid):
                         capture_image(buffer)
                         with rfid_lock:
                             rfid_valid_used = True
+                            
                     else:
                         print("RFID tidak valid!")
                         lcd.clear()
