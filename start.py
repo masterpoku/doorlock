@@ -34,6 +34,7 @@ GPIO.setup(ALARM_PIN, GPIO.OUT)  # Alarm as output
 GPIO.setup(PINTU_PIN, GPIO.OUT)  # Pintu relay as output
 GPIO.output(ALARM_PIN, GPIO.HIGH)
 
+
 # URL API
 API_URL = "https://sikapngalah.com/rfid/api.php"
 MODE = "https://sikapngalah.com/rfid/api.php?mode"
