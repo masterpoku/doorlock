@@ -32,6 +32,7 @@ GPIO.setmode(GPIO.BCM)
 GPIO.setup(DOOR_SWITCH_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Door switch as input with pull-up
 GPIO.setup(ALARM_PIN, GPIO.OUT)  # Alarm as output
 GPIO.setup(PINTU_PIN, GPIO.OUT)  # Pintu relay as output
+GPIO.output(ALARM_PIN, GPIO.HIGH)
 
 # URL API
 API_URL = "https://sikapngalah.com/rfid/api.php"
