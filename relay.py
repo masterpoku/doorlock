@@ -29,13 +29,17 @@ GPIO.setup(PINTU_PIN, GPIO.OUT)
 def cycle_pins_every_3_seconds():
     while True:
         # Nyalakan ALARM_PIN selama 1 detik
+        print("Alarm ON")
         GPIO.output(ALARM_PIN, GPIO.HIGH)
         time.sleep(1)
+        print("Alarm OFF")
         GPIO.output(ALARM_PIN, GPIO.LOW)
 
         # Nyalakan PINTU_PIN selama 1 detik
+        print("Pintu ON")
         GPIO.output(PINTU_PIN, GPIO.HIGH)
         time.sleep(1)
+        print("Pintu OFF")
         GPIO.output(PINTU_PIN, GPIO.LOW)
 
         # Tunggu 1 detik sebelum mengulang
