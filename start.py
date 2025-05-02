@@ -98,7 +98,7 @@ def read_rfid(valid_rfid):
                         lcd.clear()
                         lcd.write_string('RFID Valid!')
                         GPIO.output(PINTU_PIN, GPIO.LOW)  # Buka pintu
-                        GPIO.output(ALARM_PIN, GPIO.LOW)  # Matikan alarm
+                        GPIO.output(ALARM_PIN, GPIO.HIGH)  # Matikan alarm
                         capture_image(buffer)
                         with rfid_lock:
                             rfid_valid_used = True
@@ -182,11 +182,11 @@ def door_opened():
     if not rfid_valid_used:
         print("ALARM AKTIF: Pintu terbuka tanpa izin!")
         lcd.write_string("ALARM!")
-        GPIO.output(ALARM_PIN, GPIO.HIGH)
+        GPIO.output(ALARM_PIN, GPIO.LOW)
         capture_image("alm_aktif")
     else:
         print("Pintu dibuka dengan izin RFID valid.")
-        GPIO.output(ALARM_PIN, GPIO.LOW)
+        GPIO.output(ALARM_PIN, GPIO.HIGH)
         capture_image("rfid_valid")
         rfid_valid_used = False
 
@@ -196,7 +196,7 @@ def door_closed():
     lcd.clear()
     lcd.write_string("Pintu Tertutup")
     GPIO.output(PINTU_PIN, GPIO.LOW)  # Tutup pintu
-    GPIO.output(ALARM_PIN, GPIO.LOW)  # Matikan alarm
+    GPIO.output(ALARM_PIN, GPIO.HIGH)  # Matikan alarm
 
 # Fungsi utama
 def main():
