@@ -131,7 +131,7 @@ def read_rfid(valid_rfid):
                         except requests.RequestException as e:
                             print(f"Kesalahan saat mengakses API: {e}")
                             lcd.write_string("API Error!")
-                        GPIO.output(PINTU_PIN, GPIO.HIGH)  # Tetap tutup
+                        GPIO.output(PINTU_PIN, GPIO.LOW)  # Tetap tutup
                     buffer = ""
 
 def capture_image(nama):
